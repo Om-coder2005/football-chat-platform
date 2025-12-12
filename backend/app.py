@@ -12,7 +12,7 @@ def create_app():
     # Core config
     app.config["SECRET_KEY"] = "football-chat-secret!"  # move to .env later
     app.config["SQLALCHEMY_DATABASE_URI"] = (
-        "postgresql+psycopg2://chat_user:Your_Password@localhost:5432/football_chat"
+        "postgresql+psycopg2://chat_user:ChatRoom123!@localhost:5432/football_chat"
     )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
