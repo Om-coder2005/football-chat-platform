@@ -3,7 +3,7 @@ from flask_socketio import SocketIO, join_room, leave_room, emit
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'football-chat-secret!'
-socketio = SocketIO(app, cors_allowed_origins="http://localhost:5173", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="http://localhost:5173", async_mode='threading')
 
 @app.route('/')
 def index():
