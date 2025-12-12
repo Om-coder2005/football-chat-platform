@@ -9,6 +9,8 @@ socketio = SocketIO(
     cors_allowed_origins="http://localhost:5173",
     async_mode='threading'
 )
+app.config['SECRET_KEY'] = 'football-chat-secret!'
+socketio = SocketIO(app, cors_allowed_origins="http://localhost:5173", async_mode='threading')
 
 @app.route('/')
 def index():
