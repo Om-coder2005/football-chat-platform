@@ -4,13 +4,12 @@ from src.db.models.user import User
 import re
 
 class AuthService:
-    
     @staticmethod
     def validate_email(email):
         """Validate email format"""
         pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         return re.match(pattern, email) is not None
-    
+
     @staticmethod
     def validate_password(password):
         """
@@ -26,7 +25,7 @@ class AuthService:
         if not re.search(r'\d', password):
             return False, "Password must contain at least one number"
         return True, "Password is valid"
-    
+
     @staticmethod
     def register_user(db: Session, username, email, password, favorite_club=None):
         """
@@ -36,25 +35,25 @@ class AuthService:
         # Validate input
         if not username or len(username) < 3:
             return False, "Username must be at least 3 characters long", None
-        
+
         if not AuthService.validate_email(email):
             return False, "Invalid email format", None
-        
+
         is_valid, msg = AuthService.validate_password(password)
         if not is_valid:
             return False, msg, None
-        
+
         # Check if user already exists
         existing_user = db.query(User).filter(
             (User.username == username) | (User.email == email)
         ).first()
-        
+
         if existing_user:
             if existing_user.username == username:
                 return False, "Username already exists", None
             if existing_user.email == email:
                 return False, "Email already registered", None
-        
+
         # Create new user
         try:
             new_user = User(
@@ -63,17 +62,14 @@ class AuthService:
                 favorite_club=favorite_club
             )
             new_user.set_password(password)
-            
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
-            
             return True, "User registered successfully", new_user
-        
         except Exception as e:
             db.rollback()
             return False, f"Registration failed: {str(e)}", None
-    
+
     @staticmethod
     def login_user(db: Session, email, password):
         """
@@ -82,29 +78,29 @@ class AuthService:
         """
         if not email or not password:
             return False, "Email and password are required", None, None
-        
+
         # Find user by email
         user = db.query(User).filter(User.email == email).first()
-        
+
         if not user:
             return False, "Invalid credentials", None, None
-        
+
         # Check if user is banned
         if user.is_banned:
             return False, "Your account has been banned", None, None
-        
+
         # Check if user is active
         if not user.is_active:
             return False, "Your account is inactive", None, None
-        
+
         # Verify password
         if not user.check_password(password):
             return False, "Invalid credentials", None, None
-        
-        # Generate JWT tokens
+
+        # Generate JWT tokens (FIXED: convert user.id to string)
         try:
-            access_token = create_access_token(identity=user.id)
-            refresh_token = create_refresh_token(identity=user.id)
+            access_token = create_access_token(identity=str(user.id))
+            refresh_token = create_refresh_token(identity=str(user.id))
             
             tokens = {
                 'access_token': access_token,
@@ -112,20 +108,19 @@ class AuthService:
             }
             
             return True, "Login successful", tokens, user
-        
         except Exception as e:
             return False, f"Token generation failed: {str(e)}", None, None
-    
+
     @staticmethod
     def get_user_by_id(db: Session, user_id):
         """Get user by ID"""
         return db.query(User).filter(User.id == user_id).first()
-    
+
     @staticmethod
     def refresh_access_token(user_id):
         """Generate new access token"""
         try:
-            new_access_token = create_access_token(identity=user_id)
+            new_access_token = create_access_token(identity=str(user_id))
             return True, "Token refreshed successfully", new_access_token
         except Exception as e:
             return False, f"Token refresh failed: {str(e)}", None

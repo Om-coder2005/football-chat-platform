@@ -2,6 +2,7 @@ from datetime import datetime
 from flask_bcrypt import Bcrypt
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 bcrypt = Bcrypt()
@@ -20,6 +21,10 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Relationships
+    memberships = relationship('CommunityMember', back_populates='user', cascade='all, delete-orphan')
+    messages = relationship('Message', back_populates='user', cascade='all, delete-orphan')
+
     def set_password(self, password):
         """Hash and set the user's password"""
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')

@@ -153,3 +153,11 @@ widgetsnbextension==4.0.13
 wsproto==1.2.0
 xgboost==3.0.4
 zstandard==0.25.0
+flask
+flask-socketio
+python-socketio
+flask-jwt-extended
+flask-bcrypt
+flask-cors
+python-dotenv
+sqlalchemy

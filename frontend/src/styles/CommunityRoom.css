@@ -1,0 +1,134 @@
+/* CommunityRoom.css */
+:root {
+  --pitch-green: #248a3d;
+  --stadium-black: #1a1c1e;
+  --border-gray: #e2e8f0;
+  --text-main: #1e293b;
+  --bg-field: #f8fafc;
+}
+
+.chat-view-wrapper {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  background-color: var(--stadium-black);
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: white;
+  margin: 0 auto;
+}
+
+/* Header Styling */
+.chat-header {
+  height: 70px;
+  min-height: 70px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--stadium-black);
+  background: white;
+}
+
+.back-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid var(--stadium-black);
+  background: transparent;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.community-info { text-align: center; }
+.community-info h2 { 
+  margin: 0; 
+  font-size: 18px; 
+  text-transform: uppercase; 
+  letter-spacing: -0.5px;
+}
+
+.match-status { font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+.live .dot { background: var(--pitch-green); box-shadow: 0 0 8px var(--pitch-green); }
+
+/* Messages Area */
+.messages-viewport {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background-color: var(--bg-field);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.msg-row { display: flex; width: 100%; }
+.msg-own { justify-content: flex-end; }
+.msg-other { justify-content: flex-start; }
+
+.msg-bubble {
+  max-width: 60%;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid var(--border-gray);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.msg-own .msg-bubble {
+  border-right: 4px solid var(--pitch-green);
+  background: #f0fdf4;
+}
+
+.msg-other .msg-bubble {
+  border-left: 4px solid var(--stadium-black);
+}
+
+.msg-meta { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 4px; }
+.msg-user { font-weight: 800; font-size: 11px; text-transform: uppercase; color: var(--stadium-black); }
+.msg-time { font-size: 10px; color: #94a3b8; }
+.msg-text { font-size: 14px; line-height: 1.5; color: var(--text-main); word-break: break-word; }
+
+/* Input Area */
+.chat-input-area {
+  padding: 20px 24px;
+  background: white;
+  border-top: 1px solid var(--border-gray);
+}
+
+.input-wrapper {
+  display: flex;
+  gap: 12px;
+  height: 48px;
+}
+
+.input-wrapper input {
+  flex: 1;
+  padding: 0 16px;
+  border: 1px solid var(--border-gray);
+  font-size: 14px;
+  outline: none;
+}
+
+.input-wrapper input:focus { border-color: var(--stadium-black); }
+
+.send-trigger {
+  padding: 0 24px;
+  background: var(--stadium-black);
+  color: white;
+  border: none;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.send-trigger:hover:not(:disabled) { background: var(--pitch-green); }
+.send-trigger:disabled { opacity: 0.5; cursor: not-allowed; }

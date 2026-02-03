@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from src.db.models.user import Base
+from src.db.models.community import Community
+from src.db.models.community_member import CommunityMember
+from src.db.models.message import Message
 import os
 from dotenv import load_dotenv
 
