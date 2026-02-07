@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { messageAPI, communityAPI } from '../services/api';
+import AppHeader from './AppHeader';
 import '../styles/CommunityRoom.css';
 
 const CommunityRoom = () => {
@@ -107,19 +108,32 @@ const CommunityRoom = () => {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  if (loading) return <div className="loading-screen">INITIALIZING MATCH...</div>;
+  if (loading) {
+    return (
+      <div className="chat-view-wrapper">
+        <AppHeader />
+        <div className="loading-screen" aria-live="polite">Initializing…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="chat-view-wrapper">
+      <AppHeader />
       <div className="chat-container">
         <header className="chat-header">
-          <button className="back-btn" onClick={() => navigate('/communities')}>
-            EXIT PITCH
+          <button
+            type="button"
+            className="back-btn"
+            onClick={() => navigate('/communities')}
+            aria-label="Back to communities"
+          >
+            Exit pitch
           </button>
           <div className="community-info">
             <h2>{community?.name}</h2>
             <div className={`match-status ${isConnected ? 'live' : 'offline'}`}>
-              <span className="dot"></span> {isConnected ? 'LIVE' : 'RECONNECTING...'}
+              <span className="dot" aria-hidden="true" /> {isConnected ? 'Live' : 'Reconnecting…'}
             </div>
           </div>
           <div className="member-badge">
@@ -158,7 +172,7 @@ const CommunityRoom = () => {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={isConnected ? "Send a message..." : "Waiting for connection..."}
+              placeholder={isConnected ? "Send a message…" : "Waiting for connection…"}
               disabled={!isConnected}
             />
             <button 

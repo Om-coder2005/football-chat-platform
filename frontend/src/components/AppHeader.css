@@ -1,0 +1,150 @@
+/* Shared CASA ULTRAS header – dark theme matching reference design */
+.app-header {
+  --header-bg: #1a1a2e;
+  --header-surface: #16213e;
+  --header-text: #f0f6fc;
+  --header-muted: #8b949e;
+  --header-primary: #f48b2c;
+  --header-green: #22c55e;
+  --header-red: #ef4444;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 2rem;
+  padding: 1.5rem 2rem;
+  background: var(--header-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+@media (max-width: 900px) {
+  .app-header {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .app-header-center {
+    order: -1;
+    justify-content: flex-start;
+  }
+
+  .app-header-nav {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+.app-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-header-logo {
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+  color: var(--header-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-header-logo:hover {
+  color: var(--header-primary);
+}
+
+.app-header-logo:focus-visible {
+  outline: 2px solid var(--header-primary);
+  outline-offset: 4px;
+}
+
+.app-header-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--header-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--header-green);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+  flex-shrink: 0;
+}
+
+.live-indicator-text {
+  color: var(--header-text);
+}
+
+.app-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0.25rem;
+}
+
+.app-header-live-score {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.live-score-crest {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  flex-shrink: 0;
+}
+
+.live-score-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--header-text);
+  min-width: 3ch;
+  text-align: center;
+}
+
+.app-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.app-header-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--header-text);
+  text-decoration: none;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.app-header-link:hover {
+  color: var(--header-primary);
+}
+
+.app-header-link:focus-visible {
+  outline: 2px solid var(--header-primary);
+  outline-offset: 4px;
+}
+
+.app-header-login {
+  color: var(--header-primary);
+}
+

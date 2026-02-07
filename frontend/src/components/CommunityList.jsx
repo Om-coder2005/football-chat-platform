@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { communityAPI } from '../services/api';
+import AppHeader from './AppHeader';
 import '../styles/CommunityList.css';
 
 const CommunityList = () => {
@@ -72,16 +73,32 @@ const CommunityList = () => {
     return myCommunities.some((c) => c.id === communityId);
   };
 
-  if (loading) return <div className="loading">Loading communities...</div>;
+  if (loading) {
+    return (
+      <div className="community-list-wrapper">
+        <AppHeader />
+        <div className="community-list-container">
+          <p className="loading" aria-live="polite">Loading communities…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="community-list-container">
-      <header className="community-header">
-        <h1>⚽ Football Fan Communities</h1>
-        <button className="create-btn" onClick={() => setShowCreateModal(true)}>
-          + Create Community
-        </button>
-      </header>
+    <div className="community-list-wrapper">
+      <AppHeader />
+      <div className="community-list-container">
+        <header className="community-header">
+          <h1 className="community-title">Choose your stand</h1>
+          <button
+            type="button"
+            className="create-btn"
+            onClick={() => setShowCreateModal(true)}
+            aria-label="Create new community"
+          >
+            + Create Community
+          </button>
+        </header>
 
       <section className="my-communities-section">
         <h2>My Communities ({myCommunities.length})</h2>
@@ -165,6 +182,7 @@ const CommunityList = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

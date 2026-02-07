@@ -1,4 +1,10 @@
-/* CommunityList.css */
+/* CommunityList – CASA ULTRAS dark theme */
+.community-list-wrapper {
+  min-height: 100vh;
+  background: #0d1117;
+  color: #f0f6fc;
+}
+
 .community-list-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -10,12 +16,20 @@
   justify-content: space-between;
   align-items: center;
   padding-bottom: 1.5rem;
-  border-bottom: 2px solid var(--stadium-dark);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   margin-bottom: 2rem;
 }
 
+.community-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #f0f6fc;
+}
+
 .create-btn {
-  background: var(--pitch-green);
+  background: #f97316;
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -23,6 +37,33 @@
   text-transform: uppercase;
   font-size: 0.75rem;
   cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.create-btn:hover {
+  background: #ea580c;
+}
+
+.create-btn:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 4px;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #8b949e;
+}
+
+.my-communities-section h2,
+.all-communities-section h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #f0f6fc;
+  margin-bottom: 1rem;
 }
 
 .communities-grid {
@@ -32,32 +73,47 @@
 }
 
 .community-card {
-  border: 1px solid var(--border-color);
-  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #161b22;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
+  border-radius: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.community-card:hover {
+  border-color: rgba(249, 115, 22, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .community-card h3 {
   font-size: 1.25rem;
   font-weight: 700;
   margin-bottom: 0.25rem;
+  color: #f0f6fc;
+  min-width: 0;
 }
 
-.club-name {
+.community-card .club-name {
   font-size: 0.75rem;
-  color: var(--pitch-green);
+  color: #f97316;
   font-weight: 700;
   text-transform: uppercase;
   margin-bottom: 1rem;
 }
 
-.description {
+.community-card .description {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: #8b949e;
   margin-bottom: 1.5rem;
   flex-grow: 1;
+  min-width: 0;
+  line-clamp: 3;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-footer {
@@ -65,24 +121,170 @@
   justify-content: space-between;
   align-items: center;
   padding-top: 1rem;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .member-count {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #9ca3af;
+  color: #8b949e;
+  font-variant-numeric: tabular-nums;
 }
 
-.chat-btn, .join-btn {
+.chat-btn,
+.join-btn {
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  border: 1px solid var(--stadium-dark);
-  background: transparent;
+  border-radius: 6px;
   cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
-.chat-btn { background: var(--stadium-dark); color: white; }
-.join-btn:hover { background: #f9fafb; }
+.chat-btn {
+  background: #f97316;
+  color: white;
+  border: 2px solid #f97316;
+}
+
+.chat-btn:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+}
+
+.join-btn {
+  background: transparent;
+  color: #f0f6fc;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.join-btn:hover {
+  border-color: #f0f6fc;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.chat-btn:focus-visible,
+.join-btn:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 4px;
+}
+
+.my-community {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #8b949e;
+  padding: 2rem;
+}
+
+/* Modal – dark theme */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+  overscroll-behavior: contain;
+}
+
+.modal-content {
+  background: #161b22;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 420px;
+  width: 100%;
+}
+
+.modal-content h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f0f6fc;
+  margin-bottom: 1.5rem;
+}
+
+.modal-content input,
+.modal-content textarea {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: #0d1117;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #f0f6fc;
+  font-size: 0.875rem;
+}
+
+.modal-content input::placeholder,
+.modal-content textarea::placeholder {
+  color: #8b949e;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus {
+  outline: 2px solid #f97316;
+  border-color: transparent;
+}
+
+.modal-content textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.modal-actions button {
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.modal-actions button[type="button"] {
+  background: transparent;
+  color: #8b949e;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-actions button[type="button"]:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f0f6fc;
+}
+
+.modal-actions button[type="submit"] {
+  background: #f97316;
+  color: white;
+  border: 2px solid #f97316;
+}
+
+.modal-actions button[type="submit"]:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+}
+
+.modal-actions button:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 4px;
+}
+
+.my-communities-section {
+  margin-bottom: 3rem;
+}
+
+.all-communities-section h2 {
+  margin-bottom: 1rem;
+}
