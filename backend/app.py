@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, render_template
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from flask_jwt_extended import JWTManager, decode_token
@@ -5,6 +8,7 @@ from flask_cors import CORS
 from src.api.routes.auth_routes import auth_bp
 from src.api.routes.community_routes import community_bp
 from src.api.routes.message_routes import message_bp
+from src.api.routes.match_routes import match_bp
 from src.db.connection import get_db
 from src.db.models.community_member import CommunityMember
 from src.db.models.user import User
@@ -36,13 +40,14 @@ jwt = JWTManager(app)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode="threading"
+    async_mode="eventlet"
 )
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(community_bp, url_prefix="/api")
 app.register_blueprint(message_bp, url_prefix="/api")
+app.register_blueprint(match_bp, url_prefix="/api")
 
 @app.route("/")
 def index():
