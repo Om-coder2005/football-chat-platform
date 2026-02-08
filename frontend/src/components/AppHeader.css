@@ -10,9 +10,9 @@
 
   display: grid;
   grid-template-columns: auto 1fr auto;
-  align-items: start;
+  align-items: center;
   gap: 2rem;
-  padding: 1.5rem 2rem;
+  padding: 0.75rem 2rem;
   background: var(--header-bg);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: sticky;
@@ -23,7 +23,8 @@
 @media (max-width: 900px) {
   .app-header {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
   }
 
   .app-header-center {
@@ -38,10 +39,12 @@
   }
 }
 
+/* ── Left: Logo + Clock ──────────────────────────────────── */
+
 .app-header-left {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .app-header-logo {
@@ -62,58 +65,198 @@
   outline-offset: 4px;
 }
 
-.app-header-live-indicator {
+.app-header-clock {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--header-text);
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--header-muted);
   font-variant-numeric: tabular-nums;
 }
 
-.live-indicator-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--header-green);
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+.clock-icon-svg {
+  color: var(--header-muted);
   flex-shrink: 0;
 }
 
-.live-indicator-text {
-  color: var(--header-text);
+.clock-time {
+  letter-spacing: 0.04em;
 }
+
+/* ── Center: Live Score Ticker ───────────────────────────── */
 
 .app-header-center {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 0.25rem;
 }
 
-.app-header-live-score {
+.header-ticker-empty {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--header-muted);
   font-variant-numeric: tabular-nums;
 }
 
-.live-score-crest {
-  width: 32px;
-  height: 32px;
+.header-clock-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.header-clock-time {
+  font-weight: 600;
+}
+
+/* Ticker match card */
+
+.header-ticker-match {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  background: var(--header-surface);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+  color: var(--header-text);
+  transition: background 0.2s, border-color 0.2s;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.header-ticker-match:hover {
+  background: rgba(244, 139, 44, 0.08);
+  border-color: rgba(244, 139, 44, 0.25);
+}
+
+/* Nav buttons inside ticker */
+
+.ticker-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--header-muted);
+  cursor: pointer;
+  padding: 0.15rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.ticker-nav-btn:hover {
+  color: var(--header-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Live badge */
+
+.ticker-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: var(--header-red);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.ticker-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: ticker-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes ticker-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Team inside ticker */
+
+.ticker-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ticker-crest {
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
   flex-shrink: 0;
 }
 
-.live-score-text {
-  font-size: 1.1rem;
+.ticker-team-name {
+  font-size: 0.75rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
   color: var(--header-text);
-  min-width: 3ch;
-  text-align: center;
 }
+
+/* Score block */
+
+.ticker-score-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 2.5rem;
+}
+
+.ticker-score {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--header-text);
+  line-height: 1;
+}
+
+.ticker-vs {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--header-muted);
+  line-height: 1;
+}
+
+.ticker-minute {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--header-green);
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+
+.ticker-status {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--header-muted);
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+
+/* Match count indicator */
+
+.ticker-counter {
+  font-size: 0.55rem;
+  font-weight: 500;
+  color: var(--header-muted);
+  margin-left: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* ── Right: Nav ──────────────────────────────────────────── */
 
 .app-header-nav {
   display: flex;
@@ -147,4 +290,3 @@
 .app-header-login {
   color: var(--header-primary);
 }
-

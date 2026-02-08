@@ -1,10 +1,10 @@
-/* CommunityRoom – CASA ULTRAS dark theme */
+/* CommunityRoom – Reference Design Dark Theme */
 .chat-view-wrapper {
   min-height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
-  background-color: #0d1117;
+  background-color: #1D2333;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -17,18 +17,154 @@
   color: #8b949e;
 }
 
-.chat-container {
+/* Three-column layout */
+.chat-room-layout {
+  display: grid;
+  grid-template-columns: 80px 1fr 320px;
+  height: calc(100vh - 80px);
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Left Sidebar */
+.chat-sidebar-left {
+  background-color: #151924;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  padding: 1rem 0.5rem;
+  gap: 1rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.app-logo-icon {
+  width: 32px;
+  height: 32px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  border: 2px solid #151924;
+}
+
+.channels-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   flex: 1;
-  min-height: 0;
-  max-width: 900px;
-  margin: 0 auto;
   width: 100%;
-  background: #161b22;
-  border-radius: 12px;
-  margin: 1rem auto;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  align-items: center;
+}
+
+.channel-item {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.channel-item:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.channel-item.active {
+  border-color: #FFD700;
+  border-width: 3px;
+}
+
+.channel-logo {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.channel-logo-text {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.add-channel-btn,
+.user-profile-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.add-channel-btn {
+  font-size: 1.5rem;
+  font-weight: 300;
+}
+
+.add-channel-btn:hover,
+.user-profile-btn:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.user-profile-btn {
+  margin-top: auto;
+}
+
+/* Center Chat Area */
+.chat-main-area {
+  display: flex;
+  flex-direction: column;
+  background-color: #1D2333;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-header-bar {
+  height: 60px;
+  border-bottom: 2px solid #FFD700;
+  background-color: #1D2333;
+  position: relative;
+}
+
+.chat-header-line {
+  width: 100%;
+  height: 2px;
+  background-color: #FFD700;
 }
 
 /* Header */
@@ -115,12 +251,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Messages */
 .messages-viewport {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
-  background: #0d1117;
+  background: #1D2333;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -151,8 +286,8 @@
 }
 
 .msg-own .msg-bubble {
-  border-right: 3px solid #f97316;
-  background: rgba(249, 115, 22, 0.08);
+  border-right: 3px solid #FFD700;
+  background: rgba(255, 215, 0, 0.1);
 }
 
 .msg-other .msg-bubble {
@@ -195,12 +330,10 @@
   font-size: 0.95rem;
 }
 
-/* Input */
 .chat-input-area {
   padding: 1rem 1.5rem;
-  background: #161b22;
+  background: #1D2333;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0 0 12px 12px;
 }
 
 .input-wrapper {
@@ -214,7 +347,7 @@
   min-width: 0;
   padding: 0 1rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #0d1117;
+  background: #151924;
   color: #f0f6fc;
   font-size: 0.875rem;
   border-radius: 8px;
@@ -225,7 +358,7 @@
 }
 
 .input-wrapper input:focus {
-  outline: 2px solid #f97316;
+  outline: 2px solid #FFD700;
   border-color: transparent;
 }
 
@@ -236,9 +369,9 @@
 
 .send-trigger {
   padding: 0 1.5rem;
-  background: #f97316;
-  color: white;
-  border: 2px solid #f97316;
+  background: #FFD700;
+  color: #1D2333;
+  border: 2px solid #FFD700;
   font-weight: 700;
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -249,8 +382,8 @@
 }
 
 .send-trigger:hover:not(:disabled) {
-  background: #ea580c;
-  border-color: #ea580c;
+  background: #ffed4e;
+  border-color: #ffed4e;
 }
 
 .send-trigger:disabled {
@@ -259,6 +392,453 @@
 }
 
 .send-trigger:focus-visible {
-  outline: 2px solid #f97316;
+  outline: 2px solid #FFD700;
   outline-offset: 4px;
+}
+
+/* Right Sidebar - Match Stats */
+.chat-sidebar-right {
+  background-color: #1D2333;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 1rem;
+  gap: 1rem;
+}
+
+.tab-btn {
+  padding: 1rem 0;
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab-btn:hover {
+  color: #f0f6fc;
+}
+
+.tab-btn.active {
+  color: #f0f6fc;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #FFD700;
+}
+
+.match-stats-content,
+.members-content {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+/* Match source badge */
+.match-source-badge {
+  margin-bottom: 0.75rem;
+}
+
+.source-label {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.75rem;
+  border-radius: 4px;
+  background-color: rgba(255, 215, 0, 0.15);
+  color: #FFD700;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.source-label.source-live {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+  animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.match-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.match-league {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #f0f6fc;
+  letter-spacing: 0.05em;
+}
+
+.match-matchday {
+  font-size: 0.75rem;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stats-section {
+  margin-bottom: 2rem;
+}
+
+.stats-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #f0f6fc;
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.stat-item {
+  margin-bottom: 1.5rem;
+}
+
+.stat-bar {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 36px;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.stat-bar-left {
+  background-color: #FFD700;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 0.75rem;
+  border-radius: 4px 0 0 4px;
+  min-width: 60px;
+}
+
+.stat-bar-right {
+  background-color: #B22222;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.75rem;
+  border-radius: 0 4px 4px 0;
+  flex: 1;
+  min-width: 60px;
+}
+
+.stat-value {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1D2333;
+}
+
+.stat-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #8b949e;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background-color: #1D2333;
+  padding: 0 0.75rem;
+  z-index: 1;
+}
+
+/* Scoreboard */
+.match-scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.scoreboard-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.scoreboard-crest {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.scoreboard-crest-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #f0f6fc;
+}
+
+.scoreboard-team-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #f0f6fc;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+}
+
+.scoreboard-score-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  padding: 0 0.5rem;
+}
+
+.scoreboard-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #8b949e;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.scoreboard-status.live {
+  color: #22c55e;
+}
+
+.live-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+  70% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.scoreboard-score {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #f0f6fc;
+  letter-spacing: 0.1em;
+}
+
+.scoreboard-halftime {
+  font-size: 0.6rem;
+  color: #8b949e;
+  text-transform: uppercase;
+}
+
+.scoreboard-date {
+  font-size: 0.6rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* Goals */
+.goals-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.goal-event {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+}
+
+.goal-minute {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #FFD700;
+  min-width: 28px;
+}
+
+.goal-scorer {
+  font-size: 0.8rem;
+  color: #f0f6fc;
+  font-weight: 500;
+}
+
+.goal-type {
+  font-size: 0.65rem;
+  color: #8b949e;
+}
+
+/* No stats message */
+.no-stats-msg {
+  color: #8b949e;
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+/* Starting XI / Lineups */
+.starting-xi-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lineup-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.lineup-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.lineup-team-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #FFD700;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.03em;
+}
+
+.lineup-player {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0;
+}
+
+.lineup-number {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #8b949e;
+  min-width: 20px;
+  text-align: right;
+}
+
+.lineup-name {
+  font-size: 0.7rem;
+  color: #f0f6fc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineup-coach {
+  font-size: 0.65rem;
+  color: #8b949e;
+  font-weight: 600;
+  margin-top: 0.4rem;
+  padding-top: 0.35rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.ai-badge-sm {
+  display: inline-block;
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.1rem 0.35rem;
+  margin-left: 0.4rem;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  vertical-align: middle;
+}
+
+/* Referees */
+.referees-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.referee-name {
+  font-size: 0.8rem;
+  color: #8b949e;
+}
+
+/* Members */
+.members-header {
+  margin-bottom: 1rem;
+}
+
+.members-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #f0f6fc;
+  text-transform: uppercase;
+}
+
+.members-placeholder {
+  color: #8b949e;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .chat-room-layout {
+    grid-template-columns: 80px 1fr 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chat-room-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-sidebar-left,
+  .chat-sidebar-right {
+    display: none;
+  }
 }

@@ -53,4 +53,22 @@ export const messageAPI = {
   delete: (messageId) => api.delete(`/messages/${messageId}`),
 };
 
+export const matchAPI = {
+  getLiveMatches: () => api.get('/matches/live'),
+  getTodaysMatchesGrouped: () => api.get('/matches/today'),
+  getMatchesByDate: (dateFrom, dateTo) => 
+    api.get('/matches', { params: { dateFrom, dateTo } }),
+  getMatchDetails: (matchId) => api.get(`/matches/${matchId}`),
+  getAvailableCompetitions: () => api.get('/competitions/available'),
+  getCompetitions: () => api.get('/competitions'),
+  getCompetitionMatches: (competitionId, params = {}) => 
+    api.get(`/competitions/${competitionId}/matches`, { params }),
+  getCompetitionStandings: (competitionId) => 
+    api.get(`/competitions/${competitionId}/standings`),
+  getTeamMatches: (teamId, params = {}) => 
+    api.get(`/teams/${teamId}/matches`, { params }),
+  getTeamMatchesByName: (teamName) =>
+    api.get('/matches/team', { params: { teamName } }),
+};
+
 export default api;
