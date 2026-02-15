@@ -310,7 +310,9 @@
 }
 
 .feature-card {
-  background: rgba(22, 33, 62, 0.5);
+  background: rgba(22, 33, 62, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1.5px solid rgba(255, 255, 255, 0.18);
   border-radius: 20px;
   padding: 1rem 1.5rem;
@@ -320,10 +322,10 @@
   gap: 1.25rem;
   text-align: left;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
   min-height: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .feature-card::before {
@@ -337,9 +339,11 @@
 
 .feature-card:hover {
   border-color: rgba(244, 139, 44, 0.5);
-  background: rgba(22, 33, 62, 0.7);
+  background: rgba(22, 33, 62, 0.6);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
 .feature-card:hover::before {
@@ -514,6 +518,9 @@
   position: relative;
   isolation: isolate;
   cursor: pointer;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .club-card::before {
@@ -581,39 +588,112 @@
 }
 
 .club-card--rm {
-  background: radial-gradient(circle at 20% 20%, rgba(242, 201, 76, 0.4) 0%, rgba(26, 71, 42, 0.8) 40%, rgba(45, 90, 61, 0.95) 70%, #1a472a 100%);
-  box-shadow: inset 0 0 60px rgba(242, 201, 76, 0.1);
+  background: radial-gradient(ellipse at center, rgba(255, 193, 7, 0.7) 0%, rgba(255, 235, 180, 0.4) 25%, rgba(255, 255, 255, 1) 60%, rgba(255, 255, 255, 1) 100%);
+  background-size: 300% 300%;
+  animation: gradientShiftAlt1 35s ease-in-out infinite;
+  box-shadow: inset 0 0 60px rgba(255, 193, 7, 0.2), 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .club-card--rm:hover {
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(242, 201, 76, 0.15);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 193, 7, 0.3), inset 0 0 80px rgba(255, 193, 7, 0.25);
+  animation: gradientShiftAlt1 35s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes gradientShiftAlt1 {
+  0%, 100% {
+    background-position: 20% 30%;
+  }
+  33% {
+    background-position: 80% 70%;
+  }
+  66% {
+    background-position: 40% 60%;
+  }
+}
+
+@keyframes gradientShiftAlt2 {
+  0%, 100% {
+    background-position: 70% 40%;
+  }
+  40% {
+    background-position: 30% 80%;
+  }
+  80% {
+    background-position: 60% 20%;
+  }
+}
+
+@keyframes gradientShiftAlt3 {
+  0%, 100% {
+    background-position: 50% 70%;
+  }
+  25% {
+    background-position: 80% 30%;
+  }
+  50% {
+    background-position: 20% 60%;
+  }
+  75% {
+    background-position: 60% 80%;
+  }
+}
+
+@keyframes gradientShiftAlt4 {
+  0%, 100% {
+    background-position: 40% 50%;
+  }
+  35% {
+    background-position: 70% 20%;
+  }
+  70% {
+    background-position: 10% 70%;
+  }
 }
 
 .club-card--liverpool {
-  background: radial-gradient(circle at 20% 20%, rgba(200, 16, 46, 0.5) 0%, rgba(139, 0, 0, 0.85) 50%, #8b0000 100%);
-  box-shadow: inset 0 0 60px rgba(200, 16, 46, 0.15);
+  background: radial-gradient(ellipse at center, rgba(80, 20, 20, 0.95) 0%, rgba(139, 0, 0, 0.9) 40%, rgba(30, 10, 10, 1) 100%);
+  background-size: 300% 300%;
+  animation: gradientShiftAlt2 40s ease-in-out infinite;
+  box-shadow: inset 0 0 60px rgba(139, 0, 0, 0.3);
 }
 
 .club-card--liverpool:hover {
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(200, 16, 46, 0.2);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(139, 0, 0, 0.4);
+  animation: gradientShiftAlt2 40s ease-in-out infinite;
 }
 
 .club-card--barca {
-  background: radial-gradient(circle at 20% 20%, rgba(165, 0, 68, 0.5) 0%, rgba(0, 77, 152, 0.7) 50%, #004d98 100%);
-  box-shadow: inset 0 0 60px rgba(165, 0, 68, 0.15);
+  background: radial-gradient(ellipse at center, rgba(165, 0, 68, 0.95) 0%, rgba(80, 60, 160, 0.9) 40%, rgba(30, 70, 180, 1) 100%);
+  background-size: 300% 300%;
+  animation: gradientShiftAlt3 45s ease-in-out infinite;
+  box-shadow: inset 0 0 60px rgba(165, 0, 68, 0.3);
 }
 
 .club-card--barca:hover {
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(165, 0, 68, 0.2);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(165, 0, 68, 0.4);
+  animation: gradientShiftAlt3 45s ease-in-out infinite;
 }
 
 .club-card--utd {
-  background: radial-gradient(circle at 20% 20%, rgba(218, 41, 28, 0.5) 0%, rgba(244, 208, 63, 0.3) 40%, rgba(218, 41, 28, 0.9) 70%, #da291c 100%);
-  box-shadow: inset 0 0 60px rgba(218, 41, 28, 0.15);
+  background: radial-gradient(ellipse at center, rgba(255, 152, 0, 0.8) 0%, rgba(218, 41, 28, 0.95) 40%, rgba(218, 41, 28, 1) 100%);
+  background-size: 300% 300%;
+  animation: gradientShiftAlt4 38s ease-in-out infinite;
+  box-shadow: inset 0 0 60px rgba(218, 41, 28, 0.3);
 }
 
 .club-card--utd:hover {
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(218, 41, 28, 0.2);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(218, 41, 28, 0.4);
+  animation: gradientShiftAlt4 38s ease-in-out infinite;
 }
 
 .club-card--chelsea {
@@ -626,12 +706,24 @@
 }
 
 .club-card--arsenal {
-  background: radial-gradient(circle at 20% 20%, rgba(239, 1, 7, 0.5) 0%, rgba(156, 130, 74, 0.4) 50%, #9c824a 100%);
-  box-shadow: inset 0 0 60px rgba(239, 1, 7, 0.15);
+  background: radial-gradient(ellipse at center, rgba(255, 100, 50, 0.85) 0%, rgba(239, 1, 7, 0.95) 40%, rgba(239, 1, 7, 1) 100%);
+  background-size: 300% 300%;
+  animation: gradientShift 42s ease-in-out infinite;
+  box-shadow: inset 0 0 60px rgba(239, 1, 7, 0.3);
 }
 
 .club-card--arsenal:hover {
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(239, 1, 7, 0.2);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(239, 1, 7, 0.4);
+  animation: gradientShift 42s ease-in-out infinite;
+}
+
+.club-card--bayern {
+  background: radial-gradient(circle at 20% 20%, rgba(220, 38, 38, 0.6) 0%, rgba(185, 28, 28, 0.8) 50%, rgba(127, 29, 29, 0.95) 100%);
+  box-shadow: inset 0 0 60px rgba(220, 38, 38, 0.2);
+}
+
+.club-card--bayern:hover {
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 80px rgba(220, 38, 38, 0.25);
 }
 
 .club-card--other {
@@ -654,24 +746,14 @@
   object-fit: contain;
   margin-bottom: 1.5rem;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: none;
   z-index: 2;
   position: relative;
-  animation: logoFloat 3s ease-in-out infinite;
-}
-
-@keyframes logoFloat {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
 }
 
 .club-card:hover .club-logo {
-  transform: scale(1.15) translateY(-4px) rotate(5deg);
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6));
+  transform: none;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
   animation: none;
 }
 
@@ -688,18 +770,17 @@
   margin-bottom: 1.5rem;
   border: 3px solid rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(10px);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: none;
   z-index: 2;
   position: relative;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  animation: logoFloat 3s ease-in-out infinite;
 }
 
 .club-card:hover .club-logo-placeholder {
-  transform: scale(1.15) translateY(-4px) rotate(5deg);
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  transform: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   animation: none;
 }
 
@@ -731,12 +812,12 @@
 
 .club-subtitle {
   font-size: 0.95rem;
-  opacity: 0.95;
+  opacity: 0.7;
   margin-bottom: auto;
   min-width: 0;
-  color: var(--landing-text);
+  color: #9ca3af;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.02em;
   z-index: 2;
   position: relative;
@@ -744,7 +825,7 @@
 }
 
 .club-card:hover .club-subtitle {
-  opacity: 1;
+  opacity: 0.85;
   transform: translateX(2px);
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
@@ -759,11 +840,12 @@
   position: absolute;
   top: 1.25rem;
   right: 1.25rem;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
   padding: 0.5rem 0.9rem;
   border-radius: 24px;
   color: var(--landing-text);
-  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -772,7 +854,9 @@
 
 .club-card:hover .club-online {
   transform: scale(1.08) translateY(-2px);
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
@@ -830,8 +914,9 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -843,7 +928,9 @@
 
 .club-card:hover .club-arrow {
   transform: translateX(6px) translateY(-2px) scale(1.15);
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.3);
 }
