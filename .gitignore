@@ -47,3 +47,6 @@ structure.txt
 # Temporary
 *.tmp
 *.temp
+
+# Batch files
+*.bat
