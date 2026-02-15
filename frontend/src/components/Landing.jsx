@@ -126,6 +126,8 @@ const CLUB_BRANDING = {
   'liverpool':         { logo: '/england_liverpool.football-logos.cc.svg', gradient: 'liverpool' },
   'barcelona':         { logo: '/spain_barcelona.football-logos.cc.svg', gradient: 'barca' },
   'manchester united': { logo: '/england_manchester-united.football-logos.cc.svg', gradient: 'utd' },
+  'bayern':            { logo: null, gradient: 'bayern' },
+  'bayern munich':     { logo: null, gradient: 'bayern' },
   'arsenal':           { logo: '/england_arsenal.football-logos.cc.svg', gradient: 'arsenal' },
   'psg':               { logo: '/france_paris-saint-germain.football-logos.cc.svg', gradient: 'psg' },
   'paris saint-germain': { logo: '/france_paris-saint-germain.football-logos.cc.svg', gradient: 'psg' },
@@ -174,22 +176,50 @@ const ChooseYourStand = () => {
   }, []);
 
   /**
-   * Build the display list from real communities, enriched with branding.
-   * Shows up to 5 real communities plus an "Other" card linking to full list.
+   * Build the display list with specific clubs: Barcelona, Real Madrid, Man United, Liverpool, Arsenal + Other.
+   * If these communities don't exist in DB, show placeholder cards.
    */
   const buildDisplayList = () => {
-    const enriched = communities.slice(0, 5).map((c) => {
-      const branding = getClubBranding(c.name);
-      return {
-        id: c.id,
-        name: c.name,
-        subtitle: c.description || '',
-        online: c.member_count || 0,
-        gradient: branding.gradient,
-        logoPath: c.logo_url || branding.logo,
-      };
+    const targetClubs = [
+      { keyword: 'barcelona', displayName: 'Barcelona', subtitle: 'Blaugrana' },
+      { keyword: 'real madrid', displayName: 'Real Madrid', subtitle: 'Los Blancos Global' },
+      { keyword: 'manchester united', displayName: 'Manchester United', subtitle: 'Red Devils' },
+      { keyword: 'liverpool', displayName: 'Liverpool', subtitle: 'Merseyside Club' },
+      { keyword: 'arsenal', displayName: 'Arsenal', subtitle: 'The Gunners' }
+    ];
+    const enriched = [];
+
+    // Try to find each target club in the fetched communities
+    targetClubs.forEach((club) => {
+      const found = communities.find((c) => 
+        c.name.toLowerCase().includes(club.keyword)
+      );
+
+      if (found) {
+        const branding = getClubBranding(found.name);
+        enriched.push({
+          id: found.id,
+          name: found.name,
+          subtitle: club.subtitle,
+          online: found.member_count || 0,
+          gradient: branding.gradient,
+          logoPath: found.logo_url || branding.logo,
+        });
+      } else {
+        // Placeholder if not found in DB
+        const branding = getClubBranding(club.keyword);
+        enriched.push({
+          id: club.keyword.replace(' ', '-'),
+          name: club.displayName,
+          subtitle: club.subtitle,
+          online: 0,
+          gradient: branding.gradient,
+          logoPath: branding.logo,
+        });
+      }
     });
 
+    // Always add "Other" card at the end
     enriched.push({
       id: 'other',
       name: 'Other',
