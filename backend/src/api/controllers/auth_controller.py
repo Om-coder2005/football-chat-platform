@@ -5,10 +5,16 @@ from src.db.connection import get_db
 
 class AuthController:
     @staticmethod
+    def _get_json_payload():
+        data = request.get_json(silent=True)
+        return data if isinstance(data, dict) else {}
+
+    @staticmethod
     def register():
         """Handle user registration"""
+        db = None
         try:
-            data = request.get_json()
+            data = AuthController._get_json_payload()
             username = data.get('username')
             email = data.get('email')
             password = data.get('password')
@@ -41,12 +47,16 @@ class AuthController:
                 'success': False,
                 'message': f'Registration error: {str(e)}'
             }), 500
+        finally:
+            if db:
+                db.close()
 
     @staticmethod
     def login():
         """Handle user login"""
+        db = None
         try:
-            data = request.get_json()
+            data = AuthController._get_json_payload()
             email = data.get('email')
             password = data.get('password')
 
@@ -76,6 +86,9 @@ class AuthController:
                 'success': False,
                 'message': f'Login error: {str(e)}'
             }), 500
+        finally:
+            if db:
+                db.close()
 
     @staticmethod
     @jwt_required(refresh=True)
@@ -105,16 +118,31 @@ class AuthController:
     @staticmethod
     @jwt_required()
     def get_current_user():
-        """Get current authenticated user's profile"""
+        """Get current authenticated user's profile and communities"""
+        db = None
         try:
-            user_id = get_jwt_identity()  # This is now a string
+            user_id = int(get_jwt_identity())
             db = next(get_db())
-            user = AuthService.get_user_by_id(db, int(user_id))  # Convert to int for DB query
+            user = AuthService.get_user_by_id(db, user_id)
 
             if user:
+                user_dict = user.to_dict()
+                
+                # Fetch joined communities
+                communities = []
+                for membership in user.memberships:
+                    if membership.community:
+                        communities.append({
+                            'id': membership.community.id,
+                            'name': membership.community.name,
+                            'role': membership.role,
+                            'joined_at': membership.joined_at.isoformat() if membership.joined_at else None
+                        })
+                user_dict['communities'] = communities
+                
                 return jsonify({
                     'success': True,
-                    'user': user.to_dict()
+                    'user': user_dict
                 }), 200
             else:
                 return jsonify({
@@ -126,13 +154,58 @@ class AuthController:
                 'success': False,
                 'message': f'Error fetching user: {str(e)}'
             }), 500
+        finally:
+            if db:
+                db.close()
+
+    @staticmethod
+    @jwt_required()
+    def update_profile():
+        """Update user profile"""
+        db = None
+        try:
+            user_id = int(get_jwt_identity())
+            data = AuthController._get_json_payload()
+            db = next(get_db())
+            
+            user = AuthService.get_user_by_id(db, user_id)
+            if not user:
+                return jsonify({'success': False, 'message': 'User not found'}), 404
+                
+            # Update fields
+            if 'avatar_url' in data: user.avatar_url = data['avatar_url']
+            if 'bio' in data: user.bio = data['bio']
+            if 'favorite_club' in data: user.favorite_club = data['favorite_club']
+            
+            # Optional password update
+            if data.get('new_password'):
+                if not data.get('current_password') or not user.check_password(data['current_password']):
+                    return jsonify({'success': False, 'message': 'Incorrect current password'}), 400
+                user.set_password(data['new_password'])
+                
+            db.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Profile updated successfully',
+                'user': user.to_dict()
+            }), 200
+            
+        except Exception as e:
+            if db:
+                db.rollback()
+            return jsonify({
+                'success': False,
+                'message': f'Update error: {str(e)}'
+            }), 500
+        finally:
+            if db:
+                db.close()
 
     @staticmethod
     @jwt_required()
     def logout():
         """Handle user logout (client-side token removal)"""
-        # Note: JWT logout is typically handled client-side by removing tokens
-        # For server-side logout, you'd need to implement token blacklisting
         return jsonify({
             'success': True,
             'message': 'Logout successful. Please remove tokens from client.'

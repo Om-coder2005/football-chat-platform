@@ -2,11 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { matchAPI } from '../services/api';
 import AppHeader from './AppHeader';
-import '../styles/LiveScores.css';
 
-/**
- * Match status filter options for the tab bar
- */
 const STATUS_FILTERS = [
   { key: 'all', label: 'ALL' },
   { key: 'SCHEDULED', label: 'UPCOMING' },
@@ -14,11 +10,6 @@ const STATUS_FILTERS = [
   { key: 'FINISHED', label: 'RESULTS' },
 ];
 
-/**
- * LeagueMatches page - displays all matches for a specific competition/league.
- * Users can filter by status (upcoming, live, results).
- * @returns {JSX.Element}
- */
 const LeagueMatches = () => {
   const { competitionId } = useParams();
   const [matches, setMatches] = useState([]);
@@ -28,13 +19,8 @@ const LeagueMatches = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeView, setActiveView] = useState('matches');
 
-  useEffect(() => {
-    fetchLeagueData();
-  }, [competitionId]);
+  useEffect(() => { fetchLeagueData(); }, [competitionId]);
 
-  /**
-   * Fetch matches and standings for this competition
-   */
   const fetchLeagueData = async () => {
     setLoading(true);
     try {
@@ -42,132 +28,63 @@ const LeagueMatches = () => {
       if (response.data.success) {
         const matchList = response.data.matches || [];
         setMatches(matchList);
-
-        // Extract competition info from the first match
-        if (matchList.length > 0 && matchList[0].competition) {
-          setCompetition(matchList[0].competition);
-        }
+        if (matchList.length > 0 && matchList[0].competition) setCompetition(matchList[0].competition);
       }
-    } catch (_err) {
-      // Matches fetch failed; component will show empty state
-    }
+    } catch {}
 
-    // Fetch standings
     try {
       const standingsRes = await matchAPI.getCompetitionStandings(competitionId);
       if (standingsRes.data.success && standingsRes.data.standings?.length > 0) {
         setStandings(standingsRes.data.standings);
-
-        // If no competition info from matches, try from standings response
-        if (!competition && standingsRes.data.competition) {
-          setCompetition(standingsRes.data.competition);
-        }
+        if (!competition && standingsRes.data.competition) setCompetition(standingsRes.data.competition);
       }
-    } catch (_err) {
-      // Standings may not be available for cups
-    }
+    } catch {}
 
     setLoading(false);
   };
 
-  /**
-   * Format UTC date to readable date/time
-   * @param {string} utcDate - ISO date string
-   * @returns {string} Formatted date string
-   */
   const formatMatchDate = (utcDate) => {
     if (!utcDate) return '';
-    const d = new Date(utcDate);
-    return d.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
+    return new Date(utcDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
-  /**
-   * Format time portion of a date
-   * @param {string} utcDate - ISO date string
-   * @returns {string} Time string
-   */
   const formatMatchTime = (utcDate) => {
     if (!utcDate) return '';
-    return new Date(utcDate).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return new Date(utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  /**
-   * Get CSS class for match status
-   * @param {string} status - API status string
-   * @returns {string} CSS class suffix
-   */
-  const getStatusClass = (status) => {
-    if (status === 'IN_PLAY' || status === 'PAUSED' || status === 'LIVE') return 'live';
-    if (status === 'FINISHED') return 'finished';
-    return 'scheduled';
+  const getStatusColor = (status) => {
+    if (status === 'IN_PLAY' || status === 'PAUSED') return 'bg-red-500 text-white animate-pulse';
+    if (status === 'FINISHED') return 'bg-black text-white';
+    return 'bg-gray-200 text-gray-800';
   };
 
-  /**
-   * Get display label for match status
-   * @param {string} status - API status string
-   * @returns {string} Readable label
-   */
   const getStatusLabel = (status) => {
-    const map = {
-      SCHEDULED: 'Scheduled',
-      TIMED: 'Upcoming',
-      IN_PLAY: 'LIVE',
-      PAUSED: 'HT',
-      FINISHED: 'FT',
-      SUSPENDED: 'Susp.',
-      POSTPONED: 'Postponed',
-      CANCELLED: 'Cancelled',
-      AWARDED: 'Awarded',
-    };
+    const map = { SCHEDULED: 'SCH', TIMED: 'SCH', IN_PLAY: 'LIVE', PAUSED: 'HT', FINISHED: 'FT', SUSPENDED: 'SUSP', POSTPONED: 'PPD', CANCELLED: 'CANC' };
     return map[status] || status || '';
   };
 
-  /**
-   * Filter matches based on active status filter
-   * @returns {Array} Filtered match list
-   */
   const getFilteredMatches = () => {
     if (activeFilter === 'all') return matches;
-    if (activeFilter === 'IN_PLAY') {
-      return matches.filter(
-        (m) => m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'LIVE'
-      );
-    }
+    if (activeFilter === 'IN_PLAY') return matches.filter((m) => m.status === 'IN_PLAY' || m.status === 'PAUSED');
     return matches.filter((m) => m.status === activeFilter);
   };
 
-  /**
-   * Group matches by matchday for better organization
-   * @param {Array} matchList - Array of match objects
-   * @returns {Array} Array of { matchday, matches } groups
-   */
   const groupByMatchday = (matchList) => {
     const groups = {};
-    matchList.forEach((match) => {
-      const md = match.matchday || 'Other';
-      if (!groups[md]) {
-        groups[md] = [];
-      }
-      groups[md].push(match);
+    matchList.forEach((m) => {
+      const md = m.matchday || 'Other';
+      if (!groups[md]) groups[md] = [];
+      groups[md].push(m);
     });
-
     return Object.entries(groups)
       .map(([matchday, dayMatches]) => ({
-        matchday: matchday === 'Other' ? matchday : `Matchday ${matchday}`,
-        matches: dayMatches.sort(
-          (a, b) => new Date(a.utcDate) - new Date(b.utcDate)
-        ),
+        matchday: matchday === 'Other' ? matchday : `MATCHDAY ${matchday}`,
+        matches: dayMatches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate)),
       }))
       .sort((a, b) => {
-        const aNum = parseInt(a.matchday.replace('Matchday ', ''));
-        const bNum = parseInt(b.matchday.replace('Matchday ', ''));
+        const aNum = parseInt(a.matchday.replace('MATCHDAY ', ''));
+        const bNum = parseInt(b.matchday.replace('MATCHDAY ', ''));
         if (isNaN(aNum) || isNaN(bNum)) return 0;
         return bNum - aNum;
       });
@@ -175,56 +92,44 @@ const LeagueMatches = () => {
 
   const filteredMatches = getFilteredMatches();
   const matchdayGroups = groupByMatchday(filteredMatches);
-
-  /**
-   * Get the TOTAL standing (first standings group, typically "TOTAL")
-   * @returns {Array} Table rows for the league table
-   */
   const getTableRows = () => {
-    if (!standings || standings.length === 0) return [];
+    if (!standings?.length) return [];
     const totalStanding = standings.find((s) => s.type === 'TOTAL') || standings[0];
     return totalStanding?.table || [];
   };
-
   const tableRows = getTableRows();
 
   return (
-    <div className="live-scores-page">
+    <div className="min-h-screen bg-[var(--bg-primary)]">
       <AppHeader />
-
-      <div className="live-scores-container">
-        {/* Back navigation + League header */}
-        <div className="league-page-header">
-          <Link to="/live-scores" className="back-link">
-            ← Back to Live Scores
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* League Hero */}
+        <div className="neu-card bg-black text-white mb-8 flex flex-col md:flex-row items-center gap-6">
+          <Link to="/live-scores" className="font-archivo text-sm uppercase hover:text-yellow-400 self-start">
+            ← BACK TO SCORES
           </Link>
-
-          <div className="league-hero">
+          <div className="flex items-center gap-6 flex-1">
             {competition?.emblem && (
-              <img src={competition.emblem} alt="" className="league-hero-emblem" />
+              <img src={competition.emblem} alt="" className="w-20 h-20 object-contain" />
             )}
-            <div className="league-hero-info">
-              <h1 className="league-hero-name">
-                {competition?.name || `Competition ${competitionId}`}
-              </h1>
-              <p className="league-hero-area">
-                {competition?.area?.name || ''}
-              </p>
+            <div>
+              <h1 className="neu-heading text-5xl text-white">{competition?.name || `Competition ${competitionId}`}</h1>
+              <p className="font-archivo text-yellow-400 uppercase">{competition?.area?.name}</p>
             </div>
           </div>
         </div>
 
-        {/* View Toggle - Matches vs Standings */}
-        <div className="view-toggle-bar">
+        {/* View Toggle */}
+        <div className="flex border-4 border-black mb-8 shadow-[6px_6px_0px_0px_#000]">
           <button
-            className={`view-toggle-btn ${activeView === 'matches' ? 'active' : ''}`}
+            className={`flex-1 py-4 font-archivo text-xl uppercase transition-colors ${activeView === 'matches' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}
             onClick={() => setActiveView('matches')}
           >
             MATCHES
           </button>
           {tableRows.length > 0 && (
             <button
-              className={`view-toggle-btn ${activeView === 'standings' ? 'active' : ''}`}
+              className={`flex-1 py-4 font-archivo text-xl uppercase border-l-4 border-black transition-colors ${activeView === 'standings' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}
               onClick={() => setActiveView('standings')}
             >
               STANDINGS
@@ -233,101 +138,72 @@ const LeagueMatches = () => {
         </div>
 
         {loading ? (
-          <div className="loading-state">
-            <div className="loading-spinner" />
-            <p>Loading league data...</p>
+          <div className="neu-card bg-white text-center py-24">
+            <p className="neu-heading text-5xl animate-pulse">LOADING...</p>
           </div>
         ) : activeView === 'matches' ? (
           <>
-            {/* Status Filter Tabs */}
-            <div className="filter-tabs">
-              {STATUS_FILTERS.map((filter) => (
+            {/* Status Filters */}
+            <div className="flex gap-3 mb-8 flex-wrap">
+              {STATUS_FILTERS.map((f) => (
                 <button
-                  key={filter.key}
-                  className={`filter-tab ${activeFilter === filter.key ? 'active' : ''}`}
-                  onClick={() => setActiveFilter(filter.key)}
+                  key={f.key}
+                  onClick={() => setActiveFilter(f.key)}
+                  className={`font-archivo text-sm uppercase border-2 border-black px-4 py-2 transition-all ${activeFilter === f.key ? 'bg-black text-white shadow-[4px_4px_0px_0px_#ff3b30]' : 'bg-white hover:-translate-y-1 shadow-[3px_3px_0px_0px_#000]'}`}
                 >
-                  {filter.label}
+                  {f.label}
                 </button>
               ))}
             </div>
 
-            {/* Matches grouped by matchday */}
             {filteredMatches.length === 0 ? (
-              <div className="empty-state">
-                <p className="empty-icon">⚽</p>
-                <p>No matches found for this filter</p>
+              <div className="neu-card bg-yellow-100 text-center py-16">
+                <p className="text-6xl mb-4">⚽</p>
+                <p className="font-archivo text-3xl uppercase">No Matches Found</p>
               </div>
             ) : (
-              <div className="matchday-groups">
+              <div className="flex flex-col gap-8">
                 {matchdayGroups.map((group) => (
-                  <div key={group.matchday} className="matchday-group">
-                    <div className="matchday-header">
-                      <span className="matchday-label">{group.matchday}</span>
+                  <div key={group.matchday} className="neu-card bg-white overflow-visible">
+                    <div className="flex items-center gap-4 -mx-6 px-6 -mt-6 pt-4 pb-4 mb-4 bg-black text-white border-b-4 border-black">
+                      <span className="font-bebas text-3xl tracking-widest">{group.matchday}</span>
                     </div>
-
-                    <div className="match-list">
+                    <div className="flex flex-col gap-3">
                       {group.matches.map((match) => (
                         <Link
                           key={match.id}
                           to={`/match/${match.id}`}
-                          className={`match-row match-row-link status-${getStatusClass(match.status)}`}
+                          className="flex items-center gap-4 bg-gray-50 border-2 border-black p-3 shadow-[3px_3px_0px_0px_#000] hover:-translate-y-1 hover:shadow-[5px_5px_0px_0px_#000] transition-all group"
                         >
-                          <div className="match-time-col">
-                            <span className={`match-status-badge ${getStatusClass(match.status)}`}>
+                          <div className="w-20 flex-shrink-0 text-center">
+                            <span className={`font-archivo text-xs px-2 py-0.5 border border-black ${getStatusColor(match.status)}`}>
                               {getStatusLabel(match.status)}
                             </span>
-                            <span className="match-date-text">
-                              {formatMatchDate(match.utcDate)}
+                            <p className="font-inter text-xs text-gray-400 mt-0.5">{formatMatchDate(match.utcDate)}</p>
+                            <p className="font-inter text-xs text-gray-400">{formatMatchTime(match.utcDate)}</p>
+                          </div>
+
+                          <div className="flex items-center gap-3 flex-1 justify-end">
+                            <span className="font-archivo text-sm uppercase text-right hidden sm:block">
+                              {match.homeTeam?.shortName || match.homeTeam?.name}
                             </span>
-                            <span className="match-time-text">
-                              {formatMatchTime(match.utcDate)}
+                            {match.homeTeam?.crest && <img src={match.homeTeam.crest} alt="" className="w-7 h-7 object-contain" />}
+                          </div>
+
+                          <div className="flex-shrink-0 w-20 text-center">
+                            <span className="font-bebas text-2xl bg-black text-white px-3 py-0.5 border-2 border-black">
+                              {match.score?.fullTime?.home != null ? `${match.score.fullTime.home}-${match.score.fullTime.away}` : 'VS'}
                             </span>
                           </div>
 
-                          <div className="match-teams-col">
-                            <div className="match-team home">
-                              <span className="team-name">
-                                {match.homeTeam?.shortName || match.homeTeam?.name || 'Home'}
-                              </span>
-                              {match.homeTeam?.crest && (
-                                <img
-                                  src={match.homeTeam.crest}
-                                  alt=""
-                                  className="team-crest-small"
-                                />
-                              )}
-                            </div>
-
-                            <div className="match-score-col">
-                              {match.score?.fullTime?.home != null ? (
-                                <span className="match-score-display">
-                                  {match.score.fullTime.home} - {match.score.fullTime.away}
-                                </span>
-                              ) : (
-                                <span className="match-vs">vs</span>
-                              )}
-                            </div>
-
-                            <div className="match-team away">
-                              {match.awayTeam?.crest && (
-                                <img
-                                  src={match.awayTeam.crest}
-                                  alt=""
-                                  className="team-crest-small"
-                                />
-                              )}
-                              <span className="team-name">
-                                {match.awayTeam?.shortName || match.awayTeam?.name || 'Away'}
-                              </span>
-                            </div>
+                          <div className="flex items-center gap-3 flex-1">
+                            {match.awayTeam?.crest && <img src={match.awayTeam.crest} alt="" className="w-7 h-7 object-contain" />}
+                            <span className="font-archivo text-sm uppercase hidden sm:block">
+                              {match.awayTeam?.shortName || match.awayTeam?.name}
+                            </span>
                           </div>
 
-                          {match.score?.halfTime?.home != null && (
-                            <div className="match-ht-col">
-                              HT: {match.score.halfTime.home}-{match.score.halfTime.away}
-                            </div>
-                          )}
+                          <span className="font-archivo text-gray-400 group-hover:text-black transition-colors hidden md:block">→</span>
                         </Link>
                       ))}
                     </div>
@@ -338,42 +214,30 @@ const LeagueMatches = () => {
           </>
         ) : (
           /* Standings Table */
-          <div className="standings-table-wrapper">
-            <table className="standings-table">
+          <div className="neu-card bg-white overflow-x-auto">
+            <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-4">LEAGUE TABLE</h3>
+            <table className="w-full border-collapse">
               <thead>
-                <tr>
-                  <th className="st-pos">#</th>
-                  <th className="st-team">Team</th>
-                  <th className="st-num">P</th>
-                  <th className="st-num">W</th>
-                  <th className="st-num">D</th>
-                  <th className="st-num">L</th>
-                  <th className="st-num">GF</th>
-                  <th className="st-num">GA</th>
-                  <th className="st-num">GD</th>
-                  <th className="st-num st-pts">Pts</th>
+                <tr className="bg-black text-white">
+                  {['#', 'Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'].map((h) => (
+                    <th key={h} className="font-archivo text-sm py-3 px-2 text-center first:text-left">{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {tableRows.map((row) => (
-                  <tr key={row.team?.id || row.position}>
-                    <td className="st-pos">{row.position}</td>
-                    <td className="st-team">
-                      <div className="st-team-cell">
-                        {row.team?.crest && (
-                          <img src={row.team.crest} alt="" className="st-team-crest" />
-                        )}
-                        <span>{row.team?.shortName || row.team?.name || ''}</span>
+                {tableRows.map((row, idx) => (
+                  <tr key={row.team?.id || row.position} className={`border-b-2 border-gray-100 hover:bg-yellow-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <td className="font-archivo py-3 px-2 text-left">{row.position}</td>
+                    <td className="py-3 px-2">
+                      <div className="flex items-center gap-2">
+                        {row.team?.crest && <img src={row.team.crest} alt="" className="w-6 h-6 object-contain" />}
+                        <span className="font-archivo text-sm uppercase">{row.team?.shortName || row.team?.name}</span>
                       </div>
                     </td>
-                    <td className="st-num">{row.playedGames}</td>
-                    <td className="st-num">{row.won}</td>
-                    <td className="st-num">{row.draw}</td>
-                    <td className="st-num">{row.lost}</td>
-                    <td className="st-num">{row.goalsFor}</td>
-                    <td className="st-num">{row.goalsAgainst}</td>
-                    <td className="st-num">{row.goalDifference}</td>
-                    <td className="st-num st-pts">{row.points}</td>
+                    {[row.playedGames, row.won, row.draw, row.lost, row.goalsFor, row.goalsAgainst, row.goalDifference].map((v, i) => (
+                      <td key={i} className="font-inter font-bold text-sm text-center py-3 px-2">{v}</td>
+                    ))}
+                    <td className="font-archivo text-xl text-center py-3 px-2 bg-yellow-200">{row.points}</td>
                   </tr>
                 ))}
               </tbody>

@@ -14,3 +14,4 @@ match_bp.route('/competitions', methods=['GET'])(MatchController.get_competition
 match_bp.route('/competitions/<int:competition_id>/matches', methods=['GET'])(MatchController.get_competition_matches)
 match_bp.route('/competitions/<int:competition_id>/standings', methods=['GET'])(MatchController.get_competition_standings)
 match_bp.route('/teams/<int:team_id>/matches', methods=['GET'])(MatchController.get_team_matches)
+match_bp.route('/matches/<int:match_id>/tactical-summary', methods=['GET'])(MatchController.get_tactical_summary)

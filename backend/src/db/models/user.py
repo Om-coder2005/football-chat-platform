@@ -1,8 +1,7 @@
 from datetime import datetime
 from flask_bcrypt import Bcrypt
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 bcrypt = Bcrypt()
@@ -15,6 +14,7 @@ class User(Base):
     email = Column(String(120), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     avatar_url = Column(String(255), nullable=True)
+    bio = Column(String(255), nullable=True)
     favorite_club = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True)
     is_banned = Column(Boolean, default=False)
@@ -40,6 +40,7 @@ class User(Base):
             'username': self.username,
             'email': self.email,
             'avatar_url': self.avatar_url,
+            'bio': self.bio,
             'favorite_club': self.favorite_club,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None

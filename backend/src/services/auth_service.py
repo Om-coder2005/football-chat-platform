@@ -1,5 +1,6 @@
 from flask_jwt_extended import create_access_token, create_refresh_token
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from src.db.models.user import User
 import re
 
@@ -32,6 +33,10 @@ class AuthService:
         Register a new user
         Returns: (success: bool, message: str, user: User or None)
         """
+        # Normalize input
+        username = username.strip() if isinstance(username, str) else username
+        email = email.strip().lower() if isinstance(email, str) else email
+
         # Validate input
         if not username or len(username) < 3:
             return False, "Username must be at least 3 characters long", None
@@ -45,13 +50,13 @@ class AuthService:
 
         # Check if user already exists
         existing_user = db.query(User).filter(
-            (User.username == username) | (User.email == email)
+            (func.lower(User.username) == username.lower()) | (func.lower(User.email) == email)
         ).first()
 
         if existing_user:
-            if existing_user.username == username:
+            if existing_user.username and existing_user.username.lower() == username.lower():
                 return False, "Username already exists", None
-            if existing_user.email == email:
+            if existing_user.email and existing_user.email.lower() == email:
                 return False, "Email already registered", None
 
         # Create new user
@@ -71,16 +76,21 @@ class AuthService:
             return False, f"Registration failed: {str(e)}", None
 
     @staticmethod
-    def login_user(db: Session, email, password):
+    def login_user(db: Session, identifier, password):
         """
         Authenticate user and generate tokens
         Returns: (success: bool, message: str, tokens: dict or None, user: User or None)
         """
-        if not email or not password:
-            return False, "Email and password are required", None, None
+        if not identifier or not password:
+            return False, "Email or username and password are required", None, None
 
-        # Find user by email
-        user = db.query(User).filter(User.email == email).first()
+        identifier = identifier.strip().lower() if isinstance(identifier, str) else identifier
+
+        # Find user by email or username
+        user = db.query(User).filter(
+            (func.lower(User.email) == identifier) | 
+            (func.lower(User.username) == identifier)
+        ).first()
 
         if not user:
             return False, "Invalid credentials", None, None
@@ -97,7 +107,7 @@ class AuthService:
         if not user.check_password(password):
             return False, "Invalid credentials", None, None
 
-        # Generate JWT tokens (FIXED: convert user.id to string)
+        # Generate JWT tokens
         try:
             access_token = create_access_token(identity=str(user.id))
             refresh_token = create_refresh_token(identity=str(user.id))

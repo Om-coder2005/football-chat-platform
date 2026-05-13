@@ -28,7 +28,8 @@ debugpy==1.8.5
 decorator==5.1.1
 defusedxml==0.7.1
 dnspython==2.8.0
-eventlet==0.40.4
+gevent==26.4.0
+gevent-websocket==0.10.1
 executing==2.1.0
 fastjsonschema==2.20.0
 Flask==3.1.2

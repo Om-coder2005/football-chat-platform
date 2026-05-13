@@ -1,18 +1,19 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy.orm import Session, joinedload
 from src.db.models.message import Message
 from src.db.models.community_member import CommunityMember
-from src.db.models.user import User
 
 class MessageService:
     @staticmethod
-    def create_message(db: Session, content, user_id, community_id):
+    def create_message(db: Session, content, user_id, community_id, is_highlighted=None, media_url=None, media_description=None):
         """Create a new message and save to database"""
         try:
             message = Message(
                 content=content,
                 user_id=user_id,
-                community_id=community_id
+                community_id=community_id,
+                is_highlighted=is_highlighted,
+                media_url=media_url,
+                media_description=media_description
             )
             db.add(message)
             db.commit()
@@ -31,7 +32,7 @@ class MessageService:
         try:
             messages = db.query(Message).filter(
                 Message.community_id == community_id
-            ).order_by(Message.created_at.asc()).limit(limit).offset(offset).all()
+            ).options(joinedload(Message.user)).order_by(Message.created_at.asc()).limit(limit).offset(offset).all()
             
             return messages
         except Exception as e:
@@ -40,7 +41,7 @@ class MessageService:
     
     @staticmethod
     def delete_message(db: Session, message_id, user_id):
-        """Delete a message (only by the author or community admin)"""
+        """Delete a message by author or community admin/moderator"""
         try:
             message = db.query(Message).filter(
                 Message.id == message_id
@@ -49,10 +50,16 @@ class MessageService:
             if not message:
                 return False, "Message not found"
             
-            # Check if user is the author
+            # Allow author delete
             if message.user_id != user_id:
-                # TODO: Also allow community admins to delete
-                return False, "Unauthorized: You can only delete your own messages"
+                # Also allow community admin/moderator delete
+                membership = db.query(CommunityMember).filter_by(
+                    user_id=user_id,
+                    community_id=message.community_id
+                ).first()
+
+                if not membership or membership.role not in ('admin', 'moderator'):
+                    return False, "Unauthorized: only author or community admins/moderators can delete this message"
             
             db.delete(message)
             db.commit()
@@ -61,6 +68,37 @@ class MessageService:
             db.rollback()
             return False, f"Error deleting message: {str(e)}"
     
+    @staticmethod
+    def toggle_highlight(db: Session, message_id, user_id):
+        """Toggle highlight status for a message (admin/moderator only)"""
+        try:
+            message = db.query(Message).filter(Message.id == message_id).first()
+            if not message:
+                return False, "Message not found", 404
+            
+            # Check if user is admin or moderator
+            membership = db.query(CommunityMember).filter_by(
+                user_id=user_id,
+                community_id=message.community_id
+            ).first()
+            
+            if not membership or membership.role not in ('admin', 'moderator'):
+                return False, "Only admins or moderators can highlight messages", 403
+            
+            from datetime import datetime
+            if message.is_highlighted:
+                message.is_highlighted = None
+                action = "removed highlight"
+            else:
+                message.is_highlighted = datetime.utcnow()
+                action = "highlighted message"
+            
+            db.commit()
+            return True, f"Successfully {action}", 200
+        except Exception as e:
+            db.rollback()
+            return False, f"Error toggling highlight: {str(e)}", 500
+
     @staticmethod
     def get_message_count(db: Session, community_id):
         """Get total message count for a community"""

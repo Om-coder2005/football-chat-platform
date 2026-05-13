@@ -2,14 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { matchAPI } from '../services/api';
 import AppHeader from './AppHeader';
-import '../styles/MatchDetail.css';
+import { ChevronLeft, AlertTriangle, Activity, Shield, Info, Calendar, Clock, Trophy, Sparkles, RefreshCw } from 'lucide-react';
 
-/**
- * MatchDetail page - shows full details for a single match including
- * scoreboard, goals, lineups, referees, and match info.
- * Accessed by clicking a match row on LiveScores or LeagueMatches pages.
- * @returns {JSX.Element}
- */
 const MatchDetail = () => {
   const { matchId } = useParams();
   const navigate = useNavigate();
@@ -17,466 +11,314 @@ const MatchDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchMatchDetails();
-  }, [matchId]);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [loadingAI, setLoadingAI] = useState(false);
 
-  /**
-   * Fetch full match details from the backend
-   */
-  const fetchMatchDetails = async () => {
-    setLoading(true);
-    setError('');
+  useEffect(() => { fetchMatchDetails(); }, [matchId]);
+
+  useEffect(() => {
+    if (match && !aiSummary) {
+      fetchTacticalSummary();
+    }
+  }, [match]);
+
+  const fetchTacticalSummary = async () => {
+    if (!matchId) return;
+    setLoadingAI(true);
     try {
-      const response = await matchAPI.getMatchDetails(matchId);
-      if (response.data.success && response.data.match) {
-        setMatch(response.data.match);
-      } else {
-        setError('Match not found');
+      // For global MatchDetail, we pass communityId as null or a special value if we don't have context
+      // The backend will handle empty chat messages
+      const res = await matchAPI.getTacticalSummary(matchId, null);
+      if (res.data.success) {
+        setAiSummary(res.data.summary);
       }
-    } catch (_err) {
-      setError('Unable to load match details. Please try again.');
+    } catch (err) {
+      console.error('Tactical summary error:', err);
     } finally {
-      setLoading(false);
+      setLoadingAI(false);
     }
   };
 
-  /**
-   * Format a UTC date string to a full readable date
-   * @param {string} utcDate - ISO date string
-   * @returns {string} Full formatted date
-   */
+  const fetchMatchDetails = async () => {
+    setLoading(true); setError('');
+    try {
+      const response = await matchAPI.getMatchDetails(matchId);
+      if (response.data.success && response.data.match) setMatch(response.data.match);
+      else setError('Match not found');
+    } catch { setError('Unable to load match details. Please try again.'); }
+    finally { setLoading(false); }
+  };
+
   const formatFullDate = (utcDate) => {
     if (!utcDate) return '';
-    const d = new Date(utcDate);
-    return d.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return new Date(utcDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  /**
-   * Format a UTC date string to time only
-   * @param {string} utcDate - ISO date string
-   * @returns {string} Time string
-   */
   const formatTime = (utcDate) => {
     if (!utcDate) return '';
-    return new Date(utcDate).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return new Date(utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  /**
-   * Map API status to a human-readable label
-   * @param {string} status - API status code
-   * @returns {string} Display label
-   */
   const getStatusLabel = (status) => {
-    const map = {
-      SCHEDULED: 'Scheduled',
-      TIMED: 'Upcoming',
-      IN_PLAY: 'LIVE',
-      PAUSED: 'Half Time',
-      FINISHED: 'Full Time',
-      SUSPENDED: 'Suspended',
-      POSTPONED: 'Postponed',
-      CANCELLED: 'Cancelled',
-      AWARDED: 'Awarded',
-    };
+    const map = { SCHEDULED: 'Scheduled', TIMED: 'Upcoming', IN_PLAY: 'LIVE', PAUSED: 'Half Time', FINISHED: 'Full Time', SUSPENDED: 'Suspended', POSTPONED: 'Postponed', CANCELLED: 'Cancelled', AWARDED: 'Awarded' };
     return map[status] || status || '';
   };
 
-  /**
-   * Get CSS modifier class for the status
-   * @param {string} status - API status code
-   * @returns {string} CSS class
-   */
-  const getStatusClass = (status) => {
-    if (status === 'IN_PLAY' || status === 'PAUSED' || status === 'LIVE') return 'live';
-    if (status === 'FINISHED') return 'finished';
-    return 'scheduled';
-  };
+  const isLive = match?.status === 'IN_PLAY' || match?.status === 'PAUSED';
 
-  const isLive =
-    match?.status === 'IN_PLAY' ||
-    match?.status === 'PAUSED' ||
-    match?.status === 'LIVE';
-
-  /**
-   * Separate goals by team (home vs away)
-   * @returns {{ homeGoals: Array, awayGoals: Array }}
-   */
   const getGoalsByTeam = () => {
-    if (!match?.goals || match.goals.length === 0) return { homeGoals: [], awayGoals: [] };
+    if (!match?.goals?.length) return { homeGoals: [], awayGoals: [] };
     const homeId = match.homeTeam?.id;
-    const homeGoals = [];
-    const awayGoals = [];
-
-    match.goals.forEach((goal) => {
-      if (goal.team?.id === homeId) {
-        homeGoals.push(goal);
-      } else {
-        awayGoals.push(goal);
-      }
-    });
-
+    const homeGoals = [], awayGoals = [];
+    match.goals.forEach((g) => { if (g.team?.id === homeId) homeGoals.push(g); else awayGoals.push(g); });
     return { homeGoals, awayGoals };
   };
 
-  /**
-   * Render a goal event line
-   * @param {object} goal - Goal object from API
-   * @param {number} idx - Array index
-   * @returns {JSX.Element}
-   */
-  const renderGoal = (goal, idx) => (
-    <div key={idx} className="md-goal-event">
-      <span className="md-goal-minute">{goal.minute}&apos;</span>
-      <span className="md-goal-scorer">{goal.scorer?.name || 'Unknown'}</span>
-      {goal.assist?.name && (
-        <span className="md-goal-assist">(ast. {goal.assist.name})</span>
-      )}
-      <span className="md-goal-type">
-        {goal.type === 'PENALTY' ? '(P)' : goal.type === 'OWN' ? '(OG)' : ''}
-      </span>
-    </div>
-  );
-
-  const { homeGoals, awayGoals } = match ? getGoalsByTeam() : { homeGoals: [], awayGoals: [] };
-
-  /**
-   * Extract team statistics from the match response.
-   * The /matches/{id} endpoint returns homeTeam.statistics and awayTeam.statistics
-   * with fields like ball_possession, shots, corner_kicks, fouls, saves, etc.
-   * @returns {Array|null} Array of stat objects for rendering, or null if unavailable
-   */
   const getMatchStats = () => {
     if (!match) return null;
-    const home = match.homeTeam?.statistics;
-    const away = match.awayTeam?.statistics;
+    const home = match.homeTeam?.statistics, away = match.awayTeam?.statistics;
     if (!home || !away) return null;
-
     return [
       { label: 'Possession', home: home.ball_possession || 0, away: away.ball_possession || 0, suffix: '%', isPct: true },
       { label: 'Total Shots', home: home.total_shots || home.shots || 0, away: away.total_shots || away.shots || 0 },
       { label: 'Shots on Target', home: home.shots_on_target || home.shots_on_goal || 0, away: away.shots_on_target || away.shots_on_goal || 0 },
-      { label: 'Shots off Target', home: home.shots_off_target || home.shots_off_goal || 0, away: away.shots_off_target || away.shots_off_goal || 0 },
       { label: 'Corner Kicks', home: home.corner_kicks || 0, away: away.corner_kicks || 0 },
       { label: 'Fouls', home: home.fouls || 0, away: away.fouls || 0 },
-      { label: 'Offsides', home: home.offsides || 0, away: away.offsides || 0 },
-      { label: 'Saves', home: home.saves || 0, away: away.saves || 0 },
       { label: 'Yellow Cards', home: home.yellow_cards || 0, away: away.yellow_cards || 0 },
       { label: 'Red Cards', home: home.red_cards || 0, away: away.red_cards || 0 },
     ];
   };
 
+  const { homeGoals, awayGoals } = match ? getGoalsByTeam() : { homeGoals: [], awayGoals: [] };
   const matchStats = match ? getMatchStats() : null;
 
   return (
-    <div className="match-detail-page">
+    <div className="min-h-screen bg-[var(--bg-primary)]">
       <AppHeader />
-
-      <div className="match-detail-container">
-        {/* Back navigation */}
-        <button className="md-back-btn" onClick={() => navigate(-1)}>
-          ← Back
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Back */}
+        <button
+          onClick={() => navigate(-1)}
+          className="neu-button-secondary mb-8 py-2 px-6 flex items-center gap-2 text-sm"
+        >
+          <ChevronLeft size={16} /> BACK
         </button>
 
         {loading ? (
-          <div className="loading-state">
-            <div className="loading-spinner" />
-            <p>Loading match details...</p>
+          <div className="neu-card bg-white text-center py-24">
+            <p className="neu-heading text-5xl animate-pulse">LOADING...</p>
           </div>
         ) : error ? (
-          <div className="error-state">
-            <p>{error}</p>
-            <button className="retry-btn" onClick={fetchMatchDetails}>
-              Try Again
-            </button>
+          <div className="neu-card bg-red-100 text-center py-16 flex flex-col items-center">
+            <AlertTriangle size={48} className="text-red-800 mb-4" />
+            <p className="font-archivo text-3xl uppercase text-red-800 mb-6">{error}</p>
+            <button className="neu-button bg-red-500 text-white" onClick={fetchMatchDetails}>TRY AGAIN</button>
           </div>
         ) : match ? (
-          <>
-            {/* Competition banner */}
-            <div className="md-comp-banner">
+          <div className="flex flex-col gap-8">
+            {/* Competition Banner */}
+            <div className="neu-card bg-black text-white flex items-center gap-4 py-4">
               {match.competition?.emblem && (
-                <img
-                  src={match.competition.emblem}
-                  alt=""
-                  className="md-comp-emblem"
-                />
+                <img src={match.competition.emblem} alt="" className="w-12 h-12 object-contain" />
               )}
-              <div className="md-comp-info">
-                <Link
-                  to={`/league/${match.competition?.id}`}
-                  className="md-comp-name"
-                >
+              <div>
+                <Link to={`/league/${match.competition?.id}`} className="font-bebas text-3xl tracking-widest hover:text-yellow-400 transition-colors">
                   {match.competition?.name || 'Competition'}
                 </Link>
-                {match.matchday && (
-                  <span className="md-comp-matchday">
-                    Matchday {match.matchday}
-                  </span>
-                )}
+                {match.matchday && <span className="font-archivo text-yellow-400 text-sm ml-4">MATCHDAY {match.matchday}</span>}
               </div>
-              <span className="md-comp-area">
-                {match.area?.name || match.competition?.area?.name || ''}
-              </span>
+              <span className="ml-auto font-inter font-bold opacity-60">{match.area?.name || match.competition?.area?.name}</span>
             </div>
 
-            {/* Match date & venue */}
-            <div className="md-date-bar">
-              <span className="md-date">{formatFullDate(match.utcDate)}</span>
-              <span className="md-kickoff">Kick-off: {formatTime(match.utcDate)}</span>
-              {match.venue && <span className="md-venue">{match.venue}</span>}
+            {/* Date Bar */}
+            <div className="flex flex-wrap gap-4 items-center">
+              <span className="font-archivo text-xl uppercase bg-yellow-300 px-4 py-2 border-2 border-black shadow-[3px_3px_0px_0px_#000]">{formatFullDate(match.utcDate)}</span>
+              <span className="font-inter font-bold bg-white border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000]">KO: {formatTime(match.utcDate)}</span>
+              {match.venue && <span className="font-inter font-bold bg-gray-100 border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000]">📍 {match.venue}</span>}
             </div>
 
-            {/* Scoreboard */}
-            <div className={`md-scoreboard ${getStatusClass(match.status)}`}>
-              {/* Home team */}
-              <div className="md-team md-team-home">
-                {match.homeTeam?.crest ? (
-                  <img src={match.homeTeam.crest} alt="" className="md-team-crest" />
-                ) : (
-                  <div className="md-team-crest-ph">
-                    {match.homeTeam?.tla || match.homeTeam?.name?.charAt(0) || 'H'}
-                  </div>
-                )}
-                <span className="md-team-name">
-                  {match.homeTeam?.shortName || match.homeTeam?.name || 'Home'}
-                </span>
-                {match.homeTeam?.formation && (
-                  <span className="md-team-formation">{match.homeTeam.formation}</span>
-                )}
-              </div>
-
-              {/* Score center */}
-              <div className="md-score-center">
-                <span className={`md-status-badge ${getStatusClass(match.status)}`}>
-                  {isLive && <span className="md-live-pulse" />}
-                  {getStatusLabel(match.status)}
-                  {match.minute ? ` ${match.minute}'` : ''}
-                </span>
-                <span className="md-score-big">
-                  {match.score?.fullTime?.home ?? '-'} – {match.score?.fullTime?.away ?? '-'}
-                </span>
-                {match.score?.halfTime?.home != null && (
-                  <span className="md-score-ht">
-                    HT: {match.score.halfTime.home} – {match.score.halfTime.away}
-                  </span>
-                )}
-              </div>
-
-              {/* Away team */}
-              <div className="md-team md-team-away">
-                {match.awayTeam?.crest ? (
-                  <img src={match.awayTeam.crest} alt="" className="md-team-crest" />
-                ) : (
-                  <div className="md-team-crest-ph">
-                    {match.awayTeam?.tla || match.awayTeam?.name?.charAt(0) || 'A'}
-                  </div>
-                )}
-                <span className="md-team-name">
-                  {match.awayTeam?.shortName || match.awayTeam?.name || 'Away'}
-                </span>
-                {match.awayTeam?.formation && (
-                  <span className="md-team-formation">{match.awayTeam.formation}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Goals breakdown */}
-            {match.goals && match.goals.length > 0 && (
-              <div className="md-card md-goals-card">
-                <h3 className="md-card-title">
-                  Goals
-                  {match._ai_enriched && (
-                    <span className="md-ai-badge">AI-Powered</span>
+            {/* SCOREBOARD — Hero Card */}
+            <div className={`neu-card bg-white relative overflow-hidden ${isLive ? 'ring-4 ring-red-500' : ''}`}>
+              {isLive && (
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-red-500 animate-pulse"></div>
+              )}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-8 py-8">
+                {/* Home Team */}
+                <div className="flex flex-col items-center gap-4 flex-1">
+                  {match.homeTeam?.crest ? (
+                    <img src={match.homeTeam.crest} alt="" className="w-24 h-24 object-contain drop-shadow-lg" />
+                  ) : (
+                    <div className="w-24 h-24 bg-gray-200 border-4 border-black flex items-center justify-center font-bebas text-4xl">
+                      {match.homeTeam?.tla || 'H'}
+                    </div>
                   )}
-                </h3>
-                <div className="md-goals-columns">
-                  <div className="md-goals-col md-goals-home">
-                    <span className="md-goals-team-label">
-                      {match.homeTeam?.shortName || match.homeTeam?.name || 'Home'}
+                  <h2 className="font-archivo text-2xl uppercase text-center">{match.homeTeam?.shortName || match.homeTeam?.name}</h2>
+                  {match.homeTeam?.formation && <span className="font-inter font-bold text-sm bg-gray-100 border-2 border-black px-2 py-0.5">{match.homeTeam.formation}</span>}
+                </div>
+
+                {/* Score */}
+                <div className="flex flex-col items-center gap-3">
+                  <span className={`font-archivo text-sm uppercase px-4 py-2 border-2 border-black shadow-[3px_3px_0px_0px_#000] ${isLive ? 'bg-red-500 text-white animate-pulse' : 'bg-black text-white'}`}>
+                    {getStatusLabel(match.status)}
+                    {match.minute ? ` ${match.minute}'` : ''}
+                  </span>
+                  <span className="font-bebas text-8xl leading-none bg-black text-white px-8 py-4 border-4 border-black shadow-[8px_8px_0px_0px_#ff3b30]">
+                    {match.score?.fullTime?.home ?? '-'} – {match.score?.fullTime?.away ?? '-'}
+                  </span>
+                  {match.score?.halfTime?.home != null && (
+                    <span className="font-archivo text-sm bg-gray-200 border-2 border-black px-3 py-1">
+                      HT: {match.score.halfTime.home} – {match.score.halfTime.away}
                     </span>
-                    {homeGoals.length > 0
-                      ? homeGoals.map((g, i) => renderGoal(g, i))
-                      : <span className="md-no-goals">–</span>}
+                  )}
+                </div>
+
+                {/* Away Team */}
+                <div className="flex flex-col items-center gap-4 flex-1">
+                  {match.awayTeam?.crest ? (
+                    <img src={match.awayTeam.crest} alt="" className="w-24 h-24 object-contain drop-shadow-lg" />
+                  ) : (
+                    <div className="w-24 h-24 bg-gray-200 border-4 border-black flex items-center justify-center font-bebas text-4xl">
+                      {match.awayTeam?.tla || 'A'}
+                    </div>
+                  )}
+                  <h2 className="font-archivo text-2xl uppercase text-center">{match.awayTeam?.shortName || match.awayTeam?.name}</h2>
+                  {match.awayTeam?.formation && <span className="font-inter font-bold text-sm bg-gray-100 border-2 border-black px-2 py-0.5">{match.awayTeam.formation}</span>}
+                </div>
+              </div>
+            </div>
+
+            {/* Tactical Insight Card */}
+            {(isLive || match.status === 'FINISHED') && (
+              <div className="neu-card bg-black text-white p-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><Sparkles size={120} /></div>
+                <div className="relative z-10">
+                  <h3 className="font-bebas text-3xl mb-4 flex items-center gap-2 text-yellow-400">
+                    <Sparkles size={24} /> AI TACTICAL INSIGHT
+                  </h3>
+                  
+                  {loadingAI ? (
+                    <div className="flex items-center gap-3 py-4 text-gray-400 animate-pulse">
+                      <RefreshCw size={20} className="animate-spin" />
+                      <span className="font-archivo uppercase text-xl">Analyzing Match Data...</span>
+                    </div>
+                  ) : aiSummary ? (
+                    <div className="space-y-6">
+                      <div className="border-l-4 border-yellow-400 pl-6">
+                        <p className="font-archivo text-sm text-yellow-400 uppercase mb-2 tracking-widest">Manager's Tactical Report</p>
+                        <p className="font-inter text-xl leading-relaxed italic text-gray-100 font-bold">
+                          "{aiSummary.tactical_analysis}"
+                        </p>
+                      </div>
+                      
+                      {aiSummary.fan_sentiment && (
+                        <div className="bg-white/5 p-4 border border-white/10 rounded-sm">
+                          <p className="font-archivo text-xs text-gray-400 uppercase mb-1">Community Pulse</p>
+                          <p className="font-inter text-sm text-gray-300">{aiSummary.fan_sentiment}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 font-inter">Tactical analysis will be available once the match reaches key milestones.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Goals */}
+            {match.goals?.length > 0 && (
+              <div className="neu-card bg-white">
+                <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-4">⚽ Goals</h3>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-archivo uppercase text-sm mb-3 bg-black text-white px-3 py-1 inline-block">{match.homeTeam?.shortName}</h4>
+                    {homeGoals.length > 0 ? homeGoals.map((g, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-2 font-inter font-bold text-sm">
+                        <span className="bg-yellow-300 border border-black px-2 py-0.5 font-archivo text-xs">{g.minute}'</span>
+                        <span>{g.scorer?.name || 'Unknown'}</span>
+                        {g.assist?.name && <span className="opacity-60 text-xs">(ast. {g.assist.name})</span>}
+                        {g.type === 'PENALTY' && <span className="text-xs text-red-600 font-bold">(P)</span>}
+                        {g.type === 'OWN' && <span className="text-xs text-orange-600 font-bold">(OG)</span>}
+                      </div>
+                    )) : <p className="font-inter opacity-40 font-bold">–</p>}
                   </div>
-                  <div className="md-goals-divider" />
-                  <div className="md-goals-col md-goals-away">
-                    <span className="md-goals-team-label">
-                      {match.awayTeam?.shortName || match.awayTeam?.name || 'Away'}
-                    </span>
-                    {awayGoals.length > 0
-                      ? awayGoals.map((g, i) => renderGoal(g, i))
-                      : <span className="md-no-goals">–</span>}
+                  <div>
+                    <h4 className="font-archivo uppercase text-sm mb-3 bg-black text-white px-3 py-1 inline-block">{match.awayTeam?.shortName}</h4>
+                    {awayGoals.length > 0 ? awayGoals.map((g, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-2 font-inter font-bold text-sm justify-end">
+                        {g.type === 'OWN' && <span className="text-xs text-orange-600 font-bold">(OG)</span>}
+                        {g.type === 'PENALTY' && <span className="text-xs text-red-600 font-bold">(P)</span>}
+                        {g.assist?.name && <span className="text-gray-500 text-xs">(ast. {g.assist.name})</span>}
+                        <span>{g.scorer?.name || 'Unknown'}</span>
+                        <span className="bg-yellow-300 border border-black px-2 py-0.5 font-archivo text-xs">{g.minute}'</span>
+                      </div>
+                    )) : <p className="font-inter opacity-40 font-bold text-right">–</p>}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Match Statistics */}
-            {matchStats ? (
-              <div className="md-card md-stats-card">
-                <h3 className="md-card-title">
-                  Match Statistics
-                  {match._ai_enriched && (
-                    <span className="md-ai-badge">AI-Powered</span>
-                  )}
-                </h3>
-                <div className="md-stats-list">
+            {/* Match Stats */}
+            {matchStats && (
+              <div className="neu-card bg-white">
+                <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-6">MATCH STATISTICS</h3>
+                <div className="flex flex-col gap-4">
                   {matchStats.map((stat) => {
                     const total = stat.home + stat.away || 1;
                     const leftPct = stat.isPct ? stat.home : (stat.home / total) * 100;
                     const rightPct = stat.isPct ? stat.away : (stat.away / total) * 100;
                     return (
-                      <div key={stat.label} className="md-stat-row">
-                        <span className="md-stat-home-val">
-                          {stat.home}{stat.suffix || ''}
-                        </span>
-                        <div className="md-stat-bar-wrapper">
-                          <div className="md-stat-bar-track">
-                            <div
-                              className="md-stat-bar-fill md-stat-bar-home"
-                              style={{ width: `${Math.max(leftPct, 2)}%` }}
-                            />
-                            <div
-                              className="md-stat-bar-fill md-stat-bar-away"
-                              style={{ width: `${Math.max(rightPct, 2)}%` }}
-                            />
-                          </div>
-                          <span className="md-stat-label">{stat.label}</span>
+                      <div key={stat.label}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-archivo text-lg">{stat.home}{stat.suffix || ''}</span>
+                          <span className="font-inter font-bold text-sm opacity-60 uppercase">{stat.label}</span>
+                          <span className="font-archivo text-lg">{stat.away}{stat.suffix || ''}</span>
                         </div>
-                        <span className="md-stat-away-val">
-                          {stat.away}{stat.suffix || ''}
-                        </span>
+                        <div className="h-4 bg-gray-200 border-2 border-black flex overflow-hidden">
+                          <div className="bg-black transition-all" style={{ width: `${Math.max(leftPct, 2)}%` }}></div>
+                          <div className="bg-red-500 transition-all" style={{ width: `${Math.max(rightPct, 2)}%` }}></div>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            ) : match?.status !== 'SCHEDULED' && match?.status !== 'TIMED' ? (
-              <div className="md-card">
-                <h3 className="md-card-title">Match Statistics</h3>
-                <p className="md-no-data">Statistics not available for this match</p>
-              </div>
-            ) : null}
+            )}
 
             {/* Lineups */}
             {(match.homeTeam?.lineup?.length > 0 || match.awayTeam?.lineup?.length > 0) && (
-              <div className="md-card md-lineups-card">
-                <h3 className="md-card-title">
-                  Starting XI
-                  {match._ai_enriched && (
-                    <span className="md-ai-badge">AI-Powered</span>
-                  )}
-                </h3>
-                <div className="md-lineups-columns">
-                  {/* Home lineup */}
-                  <div className="md-lineup-col">
-                    <div className="md-lineup-header">
-                      {match.homeTeam?.crest && (
-                        <img src={match.homeTeam.crest} alt="" className="md-lineup-crest" />
-                      )}
-                      <span className="md-lineup-team-name">
-                        {match.homeTeam?.shortName || match.homeTeam?.name || 'Home'}
-                      </span>
-                      {match.homeTeam?.formation && (
-                        <span className="md-lineup-formation">({match.homeTeam.formation})</span>
-                      )}
-                    </div>
-                    {match.homeTeam?.lineup?.map((player, i) => (
-                      <div key={i} className="md-player-row">
-                        <span className="md-player-number">{player.shirtNumber || ''}</span>
-                        <span className="md-player-name">{player.name}</span>
-                        <span className="md-player-pos">{player.position || ''}</span>
+              <div className="neu-card bg-white">
+                <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-4">STARTING XI</h3>
+                <div className="grid grid-cols-2 gap-6">
+                  {[{ team: match.homeTeam }, { team: match.awayTeam }].map(({ team }) => (
+                    <div key={team?.id}>
+                      <div className="flex items-center gap-3 mb-4">
+                        {team?.crest && <img src={team.crest} alt="" className="w-8 h-8 object-contain" />}
+                        <h4 className="font-archivo uppercase">{team?.shortName || team?.name}</h4>
+                        {team?.formation && <span className="font-inter font-bold text-xs bg-gray-100 border border-black px-2 py-0.5">{team.formation}</span>}
                       </div>
-                    ))}
-
-                    {/* Home bench */}
-                    {match.homeTeam?.bench?.length > 0 && (
-                      <>
-                        <div className="md-bench-label">Substitutes</div>
-                        {match.homeTeam.bench.map((player, i) => (
-                          <div key={`hb-${i}`} className="md-player-row md-bench-player">
-                            <span className="md-player-number">{player.shirtNumber || ''}</span>
-                            <span className="md-player-name">{player.name}</span>
-                            <span className="md-player-pos">{player.position || ''}</span>
-                          </div>
-                        ))}
-                      </>
-                    )}
-
-                    {/* Home coach */}
-                    {match.homeTeam?.coach?.name && (
-                      <div className="md-coach-row">
-                        <span className="md-coach-label">Coach:</span>
-                        <span className="md-coach-name">{match.homeTeam.coach.name}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Away lineup */}
-                  <div className="md-lineup-col">
-                    <div className="md-lineup-header">
-                      {match.awayTeam?.crest && (
-                        <img src={match.awayTeam.crest} alt="" className="md-lineup-crest" />
+                      {team?.lineup?.map((p, i) => (
+                        <div key={i} className="flex items-center gap-3 py-1.5 border-b border-gray-100">
+                          <span className="font-archivo w-6 text-center text-sm bg-black text-white">{p.shirtNumber || '-'}</span>
+                          <span className="font-inter font-bold text-sm flex-1">{p.name}</span>
+                          <span className="font-inter text-xs opacity-60">{p.position || ''}</span>
+                        </div>
+                      ))}
+                      {team?.bench?.length > 0 && (
+                        <div className="mt-3">
+                          <p className="font-archivo text-xs uppercase opacity-60 mb-2 border-t border-black pt-2">SUBSTITUTES</p>
+                          {team.bench.map((p, i) => (
+                            <div key={i} className="flex items-center gap-3 py-1 opacity-70">
+                              <span className="font-archivo w-6 text-center text-xs bg-gray-400 text-white">{p.shirtNumber || '-'}</span>
+                              <span className="font-inter font-bold text-xs flex-1">{p.name}</span>
+                            </div>
+                          ))}
+                        </div>
                       )}
-                      <span className="md-lineup-team-name">
-                        {match.awayTeam?.shortName || match.awayTeam?.name || 'Away'}
-                      </span>
-                      {match.awayTeam?.formation && (
-                        <span className="md-lineup-formation">({match.awayTeam.formation})</span>
+                      {team?.coach?.name && (
+                        <p className="mt-3 font-inter font-bold text-sm border-t-2 border-black pt-2">
+                          <span className="font-archivo uppercase text-xs">Coach: </span>{team.coach.name}
+                        </p>
                       )}
-                    </div>
-                    {match.awayTeam?.lineup?.map((player, i) => (
-                      <div key={i} className="md-player-row">
-                        <span className="md-player-number">{player.shirtNumber || ''}</span>
-                        <span className="md-player-name">{player.name}</span>
-                        <span className="md-player-pos">{player.position || ''}</span>
-                      </div>
-                    ))}
-
-                    {/* Away bench */}
-                    {match.awayTeam?.bench?.length > 0 && (
-                      <>
-                        <div className="md-bench-label">Substitutes</div>
-                        {match.awayTeam.bench.map((player, i) => (
-                          <div key={`ab-${i}`} className="md-player-row md-bench-player">
-                            <span className="md-player-number">{player.shirtNumber || ''}</span>
-                            <span className="md-player-name">{player.name}</span>
-                            <span className="md-player-pos">{player.position || ''}</span>
-                          </div>
-                        ))}
-                      </>
-                    )}
-
-                    {/* Away coach */}
-                    {match.awayTeam?.coach?.name && (
-                      <div className="md-coach-row">
-                        <span className="md-coach-label">Coach:</span>
-                        <span className="md-coach-name">{match.awayTeam.coach.name}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Substitutions */}
-            {match.substitutions && match.substitutions.length > 0 && (
-              <div className="md-card">
-                <h3 className="md-card-title">Substitutions</h3>
-                <div className="md-subs-list">
-                  {match.substitutions.map((sub, i) => (
-                    <div key={i} className="md-sub-row">
-                      <span className="md-sub-minute">{sub.minute}&apos;</span>
-                      <span className="md-sub-in">↑ {sub.playerIn?.name || '?'}</span>
-                      <span className="md-sub-out">↓ {sub.playerOut?.name || '?'}</span>
                     </div>
                   ))}
                 </div>
@@ -484,21 +326,15 @@ const MatchDetail = () => {
             )}
 
             {/* Bookings */}
-            {match.bookings && match.bookings.length > 0 && (
-              <div className="md-card">
-                <h3 className="md-card-title">Bookings</h3>
-                <div className="md-bookings-list">
-                  {match.bookings.map((booking, i) => (
-                    <div key={i} className="md-booking-row">
-                      <span className="md-booking-minute">{booking.minute}&apos;</span>
-                      <span
-                        className={`md-booking-card-icon ${
-                          booking.card === 'YELLOW' ? 'yellow' : 'red'
-                        }`}
-                      />
-                      <span className="md-booking-player">
-                        {booking.player?.name || 'Unknown'}
-                      </span>
+            {match.bookings?.length > 0 && (
+              <div className="neu-card bg-white">
+                <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-4">BOOKINGS</h3>
+                <div className="flex flex-col gap-2">
+                  {match.bookings.map((b, i) => (
+                    <div key={i} className="flex items-center gap-4 py-2 border-b border-gray-100">
+                      <span className="font-archivo text-sm bg-gray-100 border border-black px-2 py-0.5">{b.minute}'</span>
+                      <span className={`w-4 h-6 border border-black ${b.card === 'YELLOW' ? 'bg-yellow-400' : 'bg-red-600'}`}></span>
+                      <span className="font-inter font-bold text-sm">{b.player?.name || 'Unknown'}</span>
                     </div>
                   ))}
                 </div>
@@ -506,29 +342,17 @@ const MatchDetail = () => {
             )}
 
             {/* Referees */}
-            {match.referees && match.referees.length > 0 && (
-              <div className="md-card">
-                <h3 className="md-card-title">Officials</h3>
-                <div className="md-referees-list">
+            {match.referees?.length > 0 && (
+              <div className="neu-card bg-white">
+                <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-4">OFFICIALS</h3>
+                <div className="grid grid-cols-2 gap-4">
                   {match.referees.map((ref, i) => (
-                    <div key={i} className="md-referee-row">
-                      <span className="md-referee-role">
-                        {ref.type === 'REFEREE'
-                          ? 'Referee'
-                          : ref.type === 'ASSISTANT_REFEREE_N1'
-                            ? 'Assistant 1'
-                            : ref.type === 'ASSISTANT_REFEREE_N2'
-                              ? 'Assistant 2'
-                              : ref.type === 'FOURTH_OFFICIAL'
-                                ? 'Fourth Official'
-                                : ref.type === 'VIDEO_ASSISTANT_REFEREE_N1'
-                                  ? 'VAR'
-                                  : ref.type || 'Official'}
+                    <div key={i} className="flex flex-col">
+                      <span className="font-archivo text-xs uppercase opacity-60">
+                        {ref.type === 'REFEREE' ? 'Referee' : ref.type === 'ASSISTANT_REFEREE_N1' ? 'Assistant 1' : ref.type === 'FOURTH_OFFICIAL' ? 'Fourth Official' : ref.type === 'VIDEO_ASSISTANT_REFEREE_N1' ? 'VAR' : ref.type}
                       </span>
-                      <span className="md-referee-name">{ref.name}</span>
-                      {ref.nationality && (
-                        <span className="md-referee-nat">{ref.nationality}</span>
-                      )}
+                      <span className="font-inter font-bold">{ref.name}</span>
+                      {ref.nationality && <span className="font-inter text-xs opacity-60">{ref.nationality}</span>}
                     </div>
                   ))}
                 </div>
@@ -536,53 +360,24 @@ const MatchDetail = () => {
             )}
 
             {/* Match Info */}
-            <div className="md-card md-info-card">
-              <h3 className="md-card-title">Match Info</h3>
-              <div className="md-info-grid">
-                {match.competition?.name && (
-                  <div className="md-info-item">
-                    <span className="md-info-label">Competition</span>
-                    <span className="md-info-value">{match.competition.name}</span>
+            <div className="neu-card bg-yellow-50">
+              <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-4">MATCH INFO</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  match.competition?.name && { label: 'Competition', value: match.competition.name },
+                  match.matchday && { label: 'Matchday', value: match.matchday },
+                  match.stage && { label: 'Stage', value: match.stage.replace(/_/g, ' ') },
+                  match.group && { label: 'Group', value: match.group.replace(/_/g, ' ') },
+                  { label: 'Match ID', value: match.id },
+                ].filter(Boolean).map((item) => (
+                  <div key={item.label} className="bg-white border-2 border-black p-3 shadow-[2px_2px_0px_0px_#000]">
+                    <p className="font-archivo text-xs uppercase opacity-60">{item.label}</p>
+                    <p className="font-inter font-bold text-sm">{item.value}</p>
                   </div>
-                )}
-                {match.season?.startDate && (
-                  <div className="md-info-item">
-                    <span className="md-info-label">Season</span>
-                    <span className="md-info-value">
-                      {new Date(match.season.startDate).getFullYear()}/
-                      {new Date(match.season.endDate || match.season.startDate).getFullYear()}
-                    </span>
-                  </div>
-                )}
-                {match.matchday && (
-                  <div className="md-info-item">
-                    <span className="md-info-label">Matchday</span>
-                    <span className="md-info-value">{match.matchday}</span>
-                  </div>
-                )}
-                {match.stage && (
-                  <div className="md-info-item">
-                    <span className="md-info-label">Stage</span>
-                    <span className="md-info-value">
-                      {match.stage.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                )}
-                {match.group && (
-                  <div className="md-info-item">
-                    <span className="md-info-label">Group</span>
-                    <span className="md-info-value">
-                      {match.group.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                )}
-                <div className="md-info-item">
-                  <span className="md-info-label">Match ID</span>
-                  <span className="md-info-value">{match.id}</span>
-                </div>
+                ))}
               </div>
             </div>
-          </>
+          </div>
         ) : null}
       </div>
     </div>

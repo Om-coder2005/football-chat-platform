@@ -1,12 +1,16 @@
 import requests
 import os
 import logging
+import time
+import json
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+# SportsDB service removed
 
 # Mapping of common club names to football-data.org team IDs
 TEAM_NAME_TO_ID = {
@@ -104,382 +108,247 @@ TEAM_NAME_TO_ID = {
 
 class MatchService:
     """
-    Service for fetching live match data from football-data.org API
-    All business logic for match data operations goes here
+    Service for fetching live match data from football-data.org API.
+    Supports API key rotation and caching to handle workload efficiently.
     """
     
     BASE_URL = "https://api.football-data.org/v4"
-    API_KEY = os.getenv("FOOTBALL_DATA_API_KEY", "")
+    
+    # Load API keys as a list from environment (comma-separated)
+    _raw_keys = os.getenv("FOOTBALL_DATA_API_KEY", "")
+    API_KEYS = [k.strip() for k in _raw_keys.split(",") if k.strip()]
+    
+    _current_key_idx = 0
+    _cache = {}
+    _key_cooldowns = {} # Stores (timestamp) when a key was rate limited
     
     @staticmethod
-    def _make_request(endpoint, params=None):
-        """
-        Make HTTP request to football-data.org API
-        @param {string} endpoint - API endpoint path
-        @param {dict} params - Query parameters
-        @returns {dict} API response data
-        @throws {Exception} If API request fails
-        """
-        if not MatchService.API_KEY:
-            raise Exception("Football Data API key not configured. Please set FOOTBALL_DATA_API_KEY in .env")
+    def _get_active_key():
+        """Get the current API key, skipping those on cooldown."""
+        if not MatchService.API_KEYS:
+            return None
+            
+        now = time.time()
+        start_idx = MatchService._current_key_idx
         
-        url = f"{MatchService.BASE_URL}{endpoint}"
-        headers = {
-            "X-Auth-Token": MatchService.API_KEY,
-            "Content-Type": "application/json"
-        }
+        # Try to find a key not on cooldown
+        for _ in range(len(MatchService.API_KEYS)):
+            idx = MatchService._current_key_idx
+            key = MatchService.API_KEYS[idx]
+            
+            # If not on cooldown or cooldown expired
+            cooldown_until = MatchService._key_cooldowns.get(key, 0)
+            if now >= cooldown_until:
+                return key
+                
+            # Move to next key
+            MatchService._current_key_idx = (MatchService._current_key_idx + 1) % len(MatchService.API_KEYS)
+            
+        # All keys on cooldown, return the one with earliest expiry or just the current
+        return MatchService.API_KEYS[start_idx]
+
+    @staticmethod
+    def _rotate_key():
+        """Move to the next available API key."""
+        if len(MatchService.API_KEYS) > 1:
+            MatchService._current_key_idx = (MatchService._current_key_idx + 1) % len(MatchService.API_KEYS)
+            logger.info(f"Rotating to API key index: {MatchService._current_key_idx}")
+
+    @staticmethod
+    def _make_request(endpoint, params=None, retries=None):
+        """
+        Make HTTP request with key rotation and automatic throttling.
+        """
+        if not MatchService.API_KEYS:
+            logger.warning("No Football Data API keys configured.")
+            return MatchService._get_empty_response(endpoint)
+            
+        # Default retries to number of keys
+        if retries is None:
+            retries = len(MatchService.API_KEYS) * 2
+
+        cache_key = f"{endpoint}_{json.dumps(params, sort_keys=True)}"
+        now = time.time()
         
-        try:
-            print(f"[MatchService] Requesting: {url} params={params}")
-            response = requests.get(url, headers=headers, params=params, timeout=15)
-            print(f"[MatchService] Response status: {response.status_code}")
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.HTTPError as e:
-            status_code = e.response.status_code if e.response else "unknown"
-            error_body = e.response.text[:500] if e.response else "No response body"
-            print(f"[MatchService] HTTP Error {status_code}: {error_body}")
-            raise Exception(f"Football API error ({status_code}): {error_body}")
-        except requests.exceptions.ConnectionError as e:
-            print(f"[MatchService] Connection error: {str(e)}")
-            raise Exception(f"Cannot connect to football-data.org: {str(e)}")
-        except requests.exceptions.Timeout as e:
-            print(f"[MatchService] Timeout: {str(e)}")
-            raise Exception(f"Football API request timed out")
-        except requests.exceptions.RequestException as e:
-            print(f"[MatchService] Request error: {str(e)}")
-            raise Exception(f"Failed to fetch match data: {str(e)}")
+        # Caching logic
+        is_matches = "/matches" in endpoint
+        is_live_filter = params and params.get("status") == "LIVE"
+        ttl = 60 if (is_matches or is_live_filter) else 300
+        
+        if cache_key in MatchService._cache:
+            cache_time, cache_data = MatchService._cache[cache_key]
+            if now - cache_time < ttl:
+                return cache_data
+        
+        attempt = 0
+        while attempt < retries:
+            api_key = MatchService._get_active_key()
+            url = f"{MatchService.BASE_URL}{endpoint}"
+            headers = {
+                "X-Auth-Token": api_key,
+                "Content-Type": "application/json"
+            }
+            
+            try:
+                response = requests.get(url, headers=headers, params=params, timeout=15)
+                
+                if response.status_code == 429:
+                    reset_time = int(response.headers.get("X-RequestCounter-Reset", 60))
+                    logger.warning(f"Rate limited on key index {MatchService._current_key_idx}. Cooling down for {reset_time}s.")
+                    
+                    # Mark current key as on cooldown
+                    MatchService._key_cooldowns[api_key] = time.time() + reset_time
+                    
+                    # Try next key immediately
+                    MatchService._rotate_key()
+                    attempt += 1
+                    continue
+                
+                response.raise_for_status()
+                
+                # Success - cache and return
+                data = response.json()
+                MatchService._cache[cache_key] = (time.time(), data)
+                
+                # Cleanup cache
+                if len(MatchService._cache) > 500:
+                    oldest = min(MatchService._cache.keys(), key=lambda k: MatchService._cache[k][0])
+                    del MatchService._cache[oldest]
+                    
+                return data
+                
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Football API Error (Key {MatchService._current_key_idx}): {e}")
+                if attempt < retries - 1:
+                    MatchService._rotate_key()
+                    attempt += 1
+                    time.sleep(1)
+                    continue
+                return MatchService._get_empty_response(endpoint)
+                
+        return MatchService._get_empty_response(endpoint)
+            
+    @staticmethod
+    def _get_empty_response(endpoint):
+        if "/competitions" in endpoint:
+            if "standings" in endpoint: return {"standings": []}
+            return {"count": 0, "competitions": []}
+        if "/matches" in endpoint: return {"count": 0, "matches": []}
+        return {}
     
     @staticmethod
     def get_live_matches():
-        """
-        Get today's matches. Fetches by date filter first (free tier friendly),
-        then filters for any live matches client-side.
-        @returns {dict} Matches data with count and matches list
-        @throws {Exception} If API request fails
-        """
-        today = datetime.now().strftime("%Y-%m-%d")
-        params = {
-            "dateFrom": today,
-            "dateTo": today
-        }
-        data = MatchService._make_request("/matches", params)
-
-        # Separate live matches from scheduled/finished
-        all_matches = data.get("matches", [])
-        live_matches = [m for m in all_matches if m.get("status") in ("IN_PLAY", "PAUSED", "LIVE")]
-
-        if live_matches:
-            return {"count": len(live_matches), "matches": live_matches}
-
-        # No live matches right now, return all of today's matches
-        return data
-    
-    @staticmethod
-    def get_todays_matches_grouped():
-        """
-        Get all of today's matches grouped by competition.
-        Returns a list of competition groups, each containing the competition
-        info and its matches for today.
-        @returns {dict} Dict with grouped_matches list and total count
-        @throws {Exception} If API request fails
-        """
         today = datetime.now().strftime("%Y-%m-%d")
         params = {"dateFrom": today, "dateTo": today}
         data = MatchService._make_request("/matches", params)
-
+        all_matches = data.get("matches", [])
+        live = [m for m in all_matches if m.get("status") in ("IN_PLAY", "PAUSED", "LIVE")]
+        return {"count": len(live), "matches": live} if live else data
+    
+    @staticmethod
+    def get_todays_matches_grouped():
+        today = datetime.now().strftime("%Y-%m-%d")
+        data = MatchService._make_request("/matches", {"dateFrom": today, "dateTo": today})
         all_matches = data.get("matches", [])
         groups = {}
-
         for match in all_matches:
             comp = match.get("competition", {})
-            comp_id = comp.get("id", 0)
-            if comp_id not in groups:
-                groups[comp_id] = {
-                    "competition": comp,
-                    "matches": []
-                }
-            groups[comp_id]["matches"].append(match)
-
-        grouped_list = sorted(
-            groups.values(),
-            key=lambda g: g["competition"].get("name", "")
-        )
-
-        return {
-            "count": len(all_matches),
-            "grouped_matches": grouped_list
-        }
+            cid = comp.get("id", 0)
+            if cid not in groups: groups[cid] = {"competition": comp, "matches": []}
+            groups[cid]["matches"].append(match)
+        return {"count": len(all_matches), "grouped_matches": sorted(groups.values(), key=lambda g: g["competition"].get("name", ""))}
 
     @staticmethod
     def get_available_competitions():
-        """
-        Get the list of competitions available on the free tier.
-        Returns only competitions that have an id and name.
-        @returns {dict} Dict with competitions list
-        @throws {Exception} If API request fails
-        """
         data = MatchService._make_request("/competitions")
-        competitions = data.get("competitions", [])
-
-        # Filter to only include competitions with proper data
-        filtered = [
-            {
-                "id": c.get("id"),
-                "name": c.get("name"),
-                "code": c.get("code"),
-                "type": c.get("type"),
-                "emblem": c.get("emblem"),
-                "area": c.get("area", {}),
-                "currentSeason": c.get("currentSeason"),
-            }
-            for c in competitions
-            if c.get("id") and c.get("name")
-        ]
-
+        comps = data.get("competitions", [])
+        filtered = [{"id": c.get("id"), "name": c.get("name"), "code": c.get("code"), "emblem": c.get("emblem"), "area": c.get("area", {})} for c in comps if c.get("id") and c.get("name")]
         return {"count": len(filtered), "competitions": filtered}
 
     @staticmethod
     def get_matches_by_date_range(date_from, date_to):
-        """
-        Get matches within a date range
-        @param {string} date_from - Start date (YYYY-MM-DD)
-        @param {string} date_to - End date (YYYY-MM-DD)
-        @returns {dict} Matches data
-        @throws {Exception} If API request fails or dates invalid
-        """
-        # Validate date format
-        try:
-            datetime.strptime(date_from, "%Y-%m-%d")
-            datetime.strptime(date_to, "%Y-%m-%d")
-        except ValueError:
-            raise Exception("Invalid date format. Use YYYY-MM-DD")
-        
-        if date_from > date_to:
-            raise Exception("date_from must be before or equal to date_to")
-        
-        params = {
-            "dateFrom": date_from,
-            "dateTo": date_to
-        }
-        return MatchService._make_request("/matches", params)
+        return MatchService._make_request("/matches", {"dateFrom": date_from, "dateTo": date_to})
     
+    # Cache for fully-enriched match objects (separate from raw API cache)
+    _enriched_cache: dict = {}
+
     @staticmethod
     def get_match_by_id(match_id, enrich=True):
-        """
-        Get detailed information about a specific match.
-        When enrich=True, uses AI-powered lookup to add statistics,
-        goals, and lineups from SofaScore via Google Gemini.
-        @param {int} match_id - Match ID
-        @param {bool} enrich - Whether to enrich with AI stats (default True)
-        @returns {dict} Match details (enriched if applicable)
-        @throws {Exception} If API request fails
-        """
         from src.services.ai_stats_service import AIStatsService
+        import time
+
+        eck = f"enriched_{match_id}"
+        now = time.time()
+
+        # Serve from enrichment cache if available
+        if eck in MatchService._enriched_cache:
+            cache_time, cached = MatchService._enriched_cache[eck]
+            # Finished matches: cache 24 h; live matches: cache 30 s
+            ttl = 86400 if cached.get("status") == "FINISHED" else 30
+            if now - cache_time < ttl:
+                return cached
 
         data = MatchService._make_request(f"/matches/{match_id}")
-
-        if enrich:
+        if enrich and data:
             try:
                 data = AIStatsService.enrich_match_data(data)
-            except Exception as exc:
-                logger.warning("AI stats enrichment failed for match %s: %s", match_id, exc)
-
+                MatchService._enriched_cache[eck] = (now, data)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Enrichment error for match {match_id}: {e}")
         return data
     
     @staticmethod
-    def get_competitions():
-        """
-        Get all available competitions (leagues)
-        @returns {dict} Competitions data
-        @throws {Exception} If API request fails
-        """
-        return MatchService._make_request("/competitions")
-    
-    @staticmethod
-    def get_competition_matches(competition_id, status=None, date_from=None, date_to=None):
-        """
-        Get matches for a specific competition
-        @param {int} competition_id - Competition ID (e.g., 2021 for Premier League)
-        @param {string} status - Filter by status (SCHEDULED, LIVE, FINISHED, etc.)
-        @param {string} date_from - Start date filter (YYYY-MM-DD)
-        @param {string} date_to - End date filter (YYYY-MM-DD)
-        @returns {dict} Matches data
-        @throws {Exception} If API request fails
-        """
-        params = {}
-        if status:
-            params["status"] = status
-        if date_from:
-            params["dateFrom"] = date_from
-        if date_to:
-            params["dateTo"] = date_to
-        
+    def get_competition_matches(competition_id, **params):
         return MatchService._make_request(f"/competitions/{competition_id}/matches", params)
     
     @staticmethod
     def get_competition_standings(competition_id):
-        """
-        Get league table/standings for a competition
-        @param {int} competition_id - Competition ID
-        @returns {dict} Standings data
-        @throws {Exception} If API request fails
-        """
         return MatchService._make_request(f"/competitions/{competition_id}/standings")
     
     @staticmethod
-    def get_team_matches(team_id, status=None, limit=10):
-        """
-        Get matches for a specific team
-        @param {int} team_id - Team ID
-        @param {string} status - Filter by status
-        @param {int} limit - Maximum number of matches to return
-        @returns {dict} Matches data
-        @throws {Exception} If API request fails
-        """
-        params = {"limit": limit}
-        if status:
-            params["status"] = status
-        
+    def get_team_matches(team_id, **params):
         return MatchService._make_request(f"/teams/{team_id}/matches", params)
 
     @staticmethod
-    def _find_team_id(team_name):
-        """
-        Look up football-data.org team ID from a community club name.
-        Uses the known mapping dictionary with fuzzy matching.
-        @param {string} team_name - Club name to search for
-        @returns {int|None} Team ID or None if not found
-        """
-        if not team_name:
-            return None
-
-        normalized = team_name.strip().lower()
-
-        # Direct match
-        if normalized in TEAM_NAME_TO_ID:
-            return TEAM_NAME_TO_ID[normalized]
-
-        # Partial match - check if any known name is contained in the input or vice versa
-        for key, team_id in TEAM_NAME_TO_ID.items():
-            if key in normalized or normalized in key:
-                return team_id
-
+    def _find_team_id(name):
+        if not name: return None
+        norm = name.strip().lower()
+        if norm in TEAM_NAME_TO_ID: return TEAM_NAME_TO_ID[norm]
+        for k, v in TEAM_NAME_TO_ID.items():
+            if k in norm or norm in k: return v
         return None
 
     @staticmethod
-    def _filter_matches_by_team(matches, team_name_lower):
-        """
-        Filter a list of matches to only include those involving a specific team.
-        Checks home and away team names and short names.
-        @param {list} matches - List of match dicts from football-data.org
-        @param {string} team_name_lower - Lowercased team name to search for
-        @returns {list} Filtered list of matches involving the team
-        """
-        filtered = []
-        for match in matches:
-            home_name = (match.get("homeTeam", {}).get("name", "") or "").lower()
-            away_name = (match.get("awayTeam", {}).get("name", "") or "").lower()
-            home_short = (match.get("homeTeam", {}).get("shortName", "") or "").lower()
-            away_short = (match.get("awayTeam", {}).get("shortName", "") or "").lower()
-            home_tla = (match.get("homeTeam", {}).get("tla", "") or "").lower()
-            away_tla = (match.get("awayTeam", {}).get("tla", "") or "").lower()
-
-            if (team_name_lower in home_name or team_name_lower in away_name or
-                    team_name_lower in home_short or team_name_lower in away_short or
-                    home_name in team_name_lower or away_name in team_name_lower or
-                    team_name_lower == home_tla or team_name_lower == away_tla):
-                filtered.append(match)
-
-        return filtered
-
-    @staticmethod
-    def _parse_utc_date(utc_date_str):
-        """
-        Parse a UTC date string from football-data.org API response.
-        Handles formats like '2024-01-15T20:00:00Z'.
-        @param {string} utc_date_str - UTC date string
-        @returns {datetime} Parsed datetime object
-        """
-        if not utc_date_str:
-            return datetime.utcnow()
-        clean = utc_date_str.replace("Z", "").split("+")[0]
-        try:
-            return datetime.strptime(clean, "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            return datetime.utcnow()
-
-    @staticmethod
     def get_matches_for_team(team_name):
-        """
-        Get today's matches for a specific team identified by club name.
-        First checks today's global matches for the team, then falls back
-        to fetching the team's most recent or upcoming match via team ID.
-        @param {string} team_name - The club name from the community
-        @returns {dict} Dict with count, matches list, and source indicator
-        @throws {Exception} If team_name is empty
-        """
-        if not team_name or not team_name.strip():
-            raise Exception("Team name is required")
-
-        team_lower = team_name.strip().lower()
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        # Step 1: Check today's matches across all competitions for this team
-        try:
-            params = {"dateFrom": today, "dateTo": today}
-            data = MatchService._make_request("/matches", params)
-            all_matches = data.get("matches", [])
-
-            team_matches = MatchService._filter_matches_by_team(all_matches, team_lower)
-            if team_matches:
-                # Prefer live matches if any
-                live = [m for m in team_matches if m.get("status") in ("IN_PLAY", "PAUSED", "LIVE")]
-                if live:
-                    return {"count": len(live), "matches": live, "source": "live"}
-                return {"count": len(team_matches), "matches": team_matches, "source": "today"}
-        except Exception as exc:
-            logger.warning("Failed to get today's matches for team '%s': %s", team_name, exc)
-
-        # Step 2: Resolve team ID and fetch their schedule directly
+        if not team_name: return {"count": 0, "matches": [], "source": "none"}
         team_id = MatchService._find_team_id(team_name)
-        if not team_id:
-            return {
-                "count": 0,
-                "matches": [],
-                "source": "none",
-                "message": f"Could not find team '{team_name}' in our database"
-            }
+        if not team_id: return {"count": 0, "matches": [], "source": "none"}
+        
+        # Fetch a wider range of matches (past and future) to find the most relevant one
+        # football-data.org team matches endpoint
+        data = MatchService._make_request(f"/teams/{team_id}/matches", {"limit": 10})
+        matches = data.get("matches", [])
+        
+        if not matches:
+            return {"count": 0, "matches": [], "source": "none"}
+            
+        now = datetime.utcnow()
+        
+        # 1. Look for LIVE/IN_PLAY matches first
+        live_matches = [m for m in matches if m.get("status") in ("IN_PLAY", "PAUSED", "LIVE")]
+        if live_matches:
+            return {"count": 1, "matches": [live_matches[0]], "source": "live"}
+            
+        # 2. Look for the most recently FINISHED match
+        finished_matches = [m for m in matches if m.get("status") == "FINISHED"]
+        if finished_matches:
+            # Sort by date descending to get the absolute latest
+            latest_finished = max(finished_matches, key=lambda m: m.get("utcDate", ""))
+            
+            # Only show it if it's very recent (e.g., within last 24 hours) OR if there's no upcoming match soon
+            return {"count": 1, "matches": [latest_finished], "source": "closest"}
 
-        # Step 2a: Try today's matches from team endpoint
-        try:
-            data = MatchService._make_request(
-                f"/teams/{team_id}/matches",
-                {"dateFrom": today, "dateTo": today, "limit": 5}
-            )
-            matches = data.get("matches", [])
-            if matches:
-                return {"count": len(matches), "matches": matches, "source": "team_today"}
-        except Exception as exc:
-            logger.warning("Failed team today lookup for ID %s: %s", team_id, exc)
-
-        # Step 2b: Get the team's recent and upcoming matches to find closest one
-        try:
-            data = MatchService._make_request(
-                f"/teams/{team_id}/matches",
-                {"limit": 15}
-            )
-            matches = data.get("matches", [])
-            if matches:
-                now = datetime.utcnow()
-                closest = min(
-                    matches,
-                    key=lambda m: abs(
-                        (MatchService._parse_utc_date(m.get("utcDate", "")) - now).total_seconds()
-                    )
-                )
-                return {"count": 1, "matches": [closest], "source": "closest"}
-        except Exception as exc:
-            logger.warning("Failed team schedule lookup for ID %s: %s", team_id, exc)
-
-        return {"count": 0, "matches": [], "source": "none"}
+        # 3. Fallback to the closest match (likely upcoming)
+        closest = min(matches, key=lambda m: abs((datetime.strptime(m.get("utcDate", "").replace("Z",""), "%Y-%m-%dT%H:%M:%S") - now).total_seconds()))
+        return {"count": 1, "matches": [closest], "source": "closest"}

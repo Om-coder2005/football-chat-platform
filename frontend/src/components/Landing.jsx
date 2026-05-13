@@ -1,329 +1,163 @@
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import { communityAPI } from '../services/api';
 import AppHeader from './AppHeader';
-import './Landing.css';
+import { MessageSquare, BarChart2, Bot, Shield, Users, Zap, Activity, ArrowRight, Star } from 'lucide-react';
 
-/**
- * Hero section with title, tagline, CTAs, background image, and feature cards.
- * @returns {JSX.Element}
- */
-const HeroSection = () => {
-  const features = [
-    {
-      id: 'live-chat',
-      title: 'Live fan chat',
-      description: 'Join the chant instantly.',
-      icon: 'chat',
-      ariaLabel: 'Live fan chat: join the chant instantly',
-    },
-    {
-      id: 'live-stats',
-      title: 'Live stats',
-      description: 'Live scores updated.',
-      icon: 'stats',
-      ariaLabel: 'Live stats: live scores updated',
-    },
-    {
-      id: 'fan-power',
-      title: 'Fan power',
-      description: 'Vote for Man of the Match.',
-      icon: 'vote',
-      ariaLabel: 'Fan power: vote for Man of the Match',
-    },
-  ];
+const features = [
+  { icon: MessageSquare, title: 'Live Fan Chat',    desc: 'Join thousands of fans in real-time during the match. React. Argue. Celebrate.', rotate: '-1.5deg' },
+  { icon: BarChart2,    title: 'Live Stats',        desc: 'Live scores, xG, possession — updated every minute during play.',               rotate: '1deg'   },
+  { icon: Bot,          title: 'AI Match Summary',  desc: 'Gemini-powered tactical breakdowns and fan sentiment reports.',                  rotate: '-0.5deg'},
+  { icon: Shield,       title: 'Club Communities',  desc: 'Curated rooms for every major club. Pick your stand, stay loyal.',              rotate: '1.5deg' },
+];
 
+const AccentColors = ['var(--highlight-bg)', '#ff3b30', '#3b82f6', '#10b981', '#8b5cf6', '#f97316'];
+
+const CommunityCard = ({ community, index }) => {
+  if (!community) return null;
   return (
-    <section className="hero" aria-labelledby="hero-title">
-      <div className="hero-content">
-        <h1 id="hero-title" className="hero-title">CASA ULTRAS</h1>
-        <p className="hero-tagline">
-          Join the only community where live scores meet real fan banter. Pick your club, enter the chat, and celebrate every goal together.
-        </p>
-        <div className="hero-actions">
-          <Link to="/communities" className="btn btn-primary">
-            Find your club
-          </Link>
-          <Link to="/live-scores" className="btn btn-outline">
-            Live scores
-          </Link>
-        </div>
-        <div className="hero-online" aria-live="polite">
-          <span className="avatar-stack" aria-hidden="true">
-            <span className="avatar" />
-            <span className="avatar" />
-            <span className="avatar" />
-          </span>
-          <span>100+ Fans Online</span>
-        </div>
-        <div className="hero-features">
-          <div className="features-grid">
-            {features.map((f) => (
-              <article
-                key={f.id}
-                className="feature-card"
-                aria-label={f.ariaLabel}
-              >
-                <div className="feature-icon-wrap">
-                  {f.icon === 'chat' && (
-                    <svg className="feature-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M8 9H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M8 12H14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M8 15H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                  )}
-                  {f.icon === 'stats' && (
-                    <svg className="feature-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
-                      <line x1="4" y1="10" x2="20" y2="10" stroke="currentColor" strokeWidth="2"/>
-                      <line x1="4" y1="15" x2="20" y2="15" stroke="currentColor" strokeWidth="2"/>
-                      <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2"/>
-                      <circle cx="8" cy="7.5" r="1.5" fill="currentColor"/>
-                      <circle cx="8" cy="12.5" r="1.5" fill="currentColor"/>
-                      <circle cx="8" cy="17.5" r="1.5" fill="currentColor"/>
-                      <path d="M14 7.5H18M14 12.5H18M14 17.5H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                  )}
-                  {f.icon === 'vote' && (
-                    <svg className="feature-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M6 9L12 3L18 9V19C18 19.5523 17.5523 20 17 20H7C6.44772 20 6 19.5523 6 19V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M9 20V14H15V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M12 3V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M3 14H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M3 14L6 11M21 14L18 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </div>
-                <div className="feature-text-wrap">
-                  <h3 className="feature-title">{f.title}</h3>
-                  <p className="feature-desc">{f.description}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
+    <Link 
+      to={`/community/${community.id || ''}`} 
+      className="neu-box p-6 block no-underline transition-transform hover:-translate-y-1"
+      style={{ 
+        background: AccentColors[index % AccentColors.length],
+        boxShadow: '6px 6px 0px 0px #000'
+      }}
+    >
+      <h3 className="font-archivo text-xl uppercase text-black mb-1 leading-tight">{community.name || 'Unknown Community'}</h3>
+      <p className="font-inter font-extrabold text-xs text-black/60 uppercase tracking-widest mb-4">{community.club_name || 'General'}</p>
+      <div className="flex items-center gap-2 bg-white/30 border border-black/20 px-3 py-1 inline-flex rounded-sm">
+        <Users size={14} color="#000" />
+        <span className="font-archivo text-xs text-black">{community.member_count || 0} FANS</span>
       </div>
-      <div className="hero-image-wrap">
-        <img
-          src="/97e2323ec9a97e9abc02e527be19a500-Picsart-AiImageEnhancer 1.png"
-          alt="Football legends and players"
-          className="hero-image"
-          fetchPriority="high"
-        />
-      </div>
-    </section>
+    </Link>
   );
 };
 
-
-/**
- * Map of club name keywords to their logo paths and gradient classes.
- * Used to match community names from the database to visual branding.
- */
-const CLUB_BRANDING = {
-  'real madrid':       { logo: '/spain_real-madrid.football-logos.cc.svg', gradient: 'rm' },
-  'liverpool':         { logo: '/england_liverpool.football-logos.cc.svg', gradient: 'liverpool' },
-  'barcelona':         { logo: '/spain_barcelona.football-logos.cc.svg', gradient: 'barca' },
-  'manchester united': { logo: '/england_manchester-united.football-logos.cc.svg', gradient: 'utd' },
-  'bayern':            { logo: null, gradient: 'bayern' },
-  'bayern munich':     { logo: null, gradient: 'bayern' },
-  'arsenal':           { logo: '/england_arsenal.football-logos.cc.svg', gradient: 'arsenal' },
-  'psg':               { logo: '/france_paris-saint-germain.football-logos.cc.svg', gradient: 'psg' },
-  'paris saint-germain': { logo: '/france_paris-saint-germain.football-logos.cc.svg', gradient: 'psg' },
-  'dortmund':          { logo: '/germany_borussia-dortmund.football-logos.cc.svg', gradient: 'dortmund' },
-  'borussia dortmund': { logo: '/germany_borussia-dortmund.football-logos.cc.svg', gradient: 'dortmund' },
-};
-
-/**
- * Get branding (logo path and gradient class) for a community by name.
- * Performs a case-insensitive partial match against known club names.
- * @param {string} communityName - Community name from database
- * @returns {{ logo: string|null, gradient: string }} Branding info
- */
-const getClubBranding = (communityName) => {
-  const nameLower = (communityName || '').toLowerCase();
-  for (const [keyword, branding] of Object.entries(CLUB_BRANDING)) {
-    if (nameLower.includes(keyword)) {
-      return branding;
-    }
-  }
-  return { logo: null, gradient: 'default' };
-};
-
-/**
- * "Choose your stand" section with club/community cards.
- * Fetches real communities from the backend so card links use valid numeric IDs.
- * @returns {JSX.Element}
- */
-const ChooseYourStand = () => {
+const Landing = () => {
   const [communities, setCommunities] = useState([]);
 
   useEffect(() => {
-    /**
-     * Fetch communities from backend API
-     */
-    const fetchCommunities = async () => {
-      try {
-        const response = await communityAPI.getAll();
-        const fetched = response.data.communities || [];
-        setCommunities(fetched);
-      } catch {
-        setCommunities([]);
-      }
-    };
-    fetchCommunities();
+    let isMounted = true;
+    communityAPI.getAll()
+      .then(r => {
+        if (isMounted && r.data && r.data.communities) {
+          setCommunities(r.data.communities.slice(0, 6));
+        }
+      })
+      .catch(err => console.error('Landing communities fetch error:', err));
+    return () => { isMounted = false; };
   }, []);
 
-  /**
-   * Build the display list with specific clubs: Barcelona, Real Madrid, Man United, Liverpool, Arsenal + Other.
-   * If these communities don't exist in DB, show placeholder cards.
-   */
-  const buildDisplayList = () => {
-    const targetClubs = [
-      { keyword: 'barcelona', displayName: 'Barcelona', subtitle: 'Blaugrana' },
-      { keyword: 'real madrid', displayName: 'Real Madrid', subtitle: 'Los Blancos Global' },
-      { keyword: 'manchester united', displayName: 'Manchester United', subtitle: 'Red Devils' },
-      { keyword: 'liverpool', displayName: 'Liverpool', subtitle: 'Merseyside Club' },
-      { keyword: 'arsenal', displayName: 'Arsenal', subtitle: 'The Gunners' }
-    ];
-    const enriched = [];
-
-    // Try to find each target club in the fetched communities
-    targetClubs.forEach((club) => {
-      const found = communities.find((c) => 
-        c.name.toLowerCase().includes(club.keyword)
-      );
-
-      if (found) {
-        const branding = getClubBranding(found.name);
-        enriched.push({
-          id: found.id,
-          name: found.name,
-          subtitle: club.subtitle,
-          online: found.member_count || 0,
-          gradient: branding.gradient,
-          logoPath: found.logo_url || branding.logo,
-        });
-      } else {
-        // Placeholder if not found in DB
-        const branding = getClubBranding(club.keyword);
-        enriched.push({
-          id: club.keyword.replace(' ', '-'),
-          name: club.displayName,
-          subtitle: club.subtitle,
-          online: 0,
-          gradient: branding.gradient,
-          logoPath: branding.logo,
-        });
-      }
-    });
-
-    // Always add "Other" card at the end
-    enriched.push({
-      id: 'other',
-      name: 'Other',
-      subtitle: '50+ clubs',
-      online: null,
-      gradient: 'other',
-      logoPath: null,
-    });
-
-    return enriched;
-  };
-
-  const displayCommunities = buildDisplayList();
-
   return (
-    <section id="live-scores" className="choose-stand" aria-labelledby="choose-stand-heading">
-      <h2 id="choose-stand-heading" className="section-title">CHOOSE YOUR STAND</h2>
-      <p className="section-tagline">Join 50+ active communities. No bandwagon fans allowed.</p>
-      <div className="clubs-grid">
-        {displayCommunities.map((c) => (
-          <Link
-            key={c.id}
-            to={c.id === 'other' ? '/communities' : `/community/${c.id}`}
-            className={`club-card club-card--${c.gradient || 'default'}`}
-            aria-label={`${c.name}${c.subtitle ? `, ${c.subtitle}` : ''}${c.online != null ? `, ${c.online} online` : ''}`}
-          >
-            <div className="club-card-inner">
-              {c.logoPath ? (
-                <img src={c.logoPath} alt="" width={56} height={56} className="club-logo" aria-hidden="true" />
-              ) : (
-                <span className={`club-logo-placeholder ${c.id === 'other' ? 'club-logo-placeholder--other' : ''}`} aria-hidden="true">
-                  {c.id === 'other' ? '50+' : c.name.charAt(0)}
-                </span>
-              )}
-              <h3 className="club-name">{c.name}</h3>
-              <p className="club-subtitle">{c.subtitle}</p>
-              {c.online != null && (
-                <span className="club-online">
-                  <span className="club-online-dot" aria-hidden="true" />
-                  {c.online} online
-                </span>
-              )}
-              <span className="club-arrow" aria-hidden="true" />
-            </div>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-};
-
-/**
- * Full-bleed heritage banner with crowd image.
- * @returns {JSX.Element}
- */
-const HeritageBanner = () => {
-  return (
-    <section className="heritage-banner" aria-labelledby="heritage-heading">
-      <img
-        src="/download (14) 1 (1).png"
-        alt=""
-        width={1920}
-        height={600}
-        className="heritage-bg"
-        loading="lazy"
-      />
-      <div className="heritage-overlay" />
-      <h2 id="heritage-heading" className="heritage-title">Create a heritage</h2>
-    </section>
-  );
-};
-
-/**
- * Footer with brand, copyright, and social links.
- * @returns {JSX.Element}
- */
-const LandingFooter = () => {
-  return (
-    <footer className="landing-footer">
-      <span className="footer-brand">CASA ULTRAS</span>
-      <span className="footer-copy">© 2025 Football Fan Community. Built for the fans.</span>
-      <div className="footer-social">
-        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Instagram">Instagram</a>
-        <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="X (Twitter)">X</a>
-        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="GitHub">GitHub</a>
-      </div>
-    </footer>
-  );
-};
-
-/**
- * Landing page: hero, features, choose your stand, heritage banner, footer.
- * Uses design from CASA ULTRAS reference (dark theme, orange/green accents).
- */
-const Landing = () => {
-  return (
-    <div className="landing-page">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-0">
       <AppHeader />
-      <main>
-        <HeroSection />
-        <ChooseYourStand />
-        <HeritageBanner />
-      </main>
-      <LandingFooter />
+
+      {/* ── HERO ── */}
+      <section className="border-b-4 border-black py-20 px-6 relative overflow-hidden bg-[linear-gradient(135deg,var(--bg-primary)_0%,var(--bg-tertiary)_100%)]">
+        <div className="absolute top-10 right-10 opacity-10 rotate-12 hidden lg:block">
+           <Zap size={200} fill="var(--accent-primary)" stroke="none" />
+        </div>
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="flex flex-wrap gap-4 mb-8">
+            <span className="comic-sticker rotate-[-3deg] text-lg px-6 py-2">⚽ MATCHDAY LIVE</span>
+            <span className="comic-sticker bg-black text-white rotate-[2deg] text-lg px-6 py-2">NO PLASTIC FANS</span>
+          </div>
+
+          <h1 className="neu-heading text-[clamp(4rem,15vw,12rem)] mb-6 leading-[0.85] tracking-tighter">
+            CASA<br />ULTRAS
+          </h1>
+
+          <div className="max-w-xl mb-12">
+            <p className="font-inter font-bold text-2xl bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] rotate-[-1deg] leading-relaxed">
+              The only digital pub where live scores meet real fan banter. <span className="text-[var(--accent-primary)]">Pick your club.</span> Join the chant.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-6">
+            <Link to="/communities" className="neu-button text-xl py-5 px-10 group bg-yellow-400 text-black">
+              <Users size={24} /> FIND YOUR CLUB <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+            </Link>
+            <Link to="/live-scores" className="neu-button-secondary text-xl py-5 px-10 bg-white">
+              <Activity size={24} /> LIVE SCORES
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section className="py-24 px-6 border-b-4 border-black bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-6 mb-16">
+            <h2 className="neu-heading text-5xl md:text-7xl">WHY CASA ULTRAS?</h2>
+            <div className="h-2 flex-1 bg-black"></div>
+            <Star size={48} className="text-yellow-400 fill-current" />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((f, i) => {
+              const Icon = f.icon;
+              return (
+                <div 
+                  key={f.title} 
+                  className="neu-card bg-[var(--bg-primary)] p-8 transition-all hover:rotate-0"
+                  style={{ transform: `rotate(${f.rotate})` }}
+                >
+                  <div className="bg-[var(--accent-primary)] border-4 border-black w-16 h-16 flex items-center justify-center mb-6 shadow-[4px_4px_0px_0px_#000]">
+                    <Icon size={32} color="#fff" />
+                  </div>
+                  <h3 className="font-archivo text-2xl uppercase mb-3 leading-tight">{f.title}</h3>
+                  <p className="font-inter font-bold text-[var(--text-secondary)] leading-relaxed text-sm">{f.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── ACTIVE STANDS ── */}
+      {communities.length > 0 && (
+        <section className="py-24 px-6 border-b-4 border-black bg-[var(--bg-tertiary)]">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex justify-between items-end mb-12 gap-6">
+              <h2 className="neu-heading text-5xl md:text-7xl">ACTIVE STANDS</h2>
+              <Link to="/communities" className="neu-button-secondary py-3 px-8 text-sm flex items-center gap-2">
+                VIEW ALL COMMUNITIES <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {communities.map((c, i) => <CommunityCard key={c.id || i} community={c} index={i} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── CTA ── */}
+      <section className="py-32 px-6 bg-black text-white text-center relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+           <div className="flex flex-wrap gap-20 p-20 justify-center">
+             {[...Array(20)].map((_, i) => <Activity key={i} size={100} />)}
+           </div>
+        </div>
+        
+        <div className="max-w-3xl mx-auto relative z-10">
+          <h2 className="font-bebas text-[5rem] md:text-[8rem] text-[var(--accent-primary)] mb-4 leading-none tracking-tight">
+            THE TERRACE IS CALLING
+          </h2>
+          <p className="font-archivo text-xl mb-12 uppercase tracking-widest text-gray-400">
+            Join 10,000+ fans already in the stands.
+          </p>
+          <div className="flex flex-wrap gap-6 justify-center">
+            <Link to="/register" className="neu-button bg-[var(--accent-primary)] text-white text-2xl py-6 px-12 shadow-[6px_6px_0px_0px_#fff] border-white">
+              <Zap size={28} /> CREATE ACCOUNT
+            </Link>
+            <Link to="/login" className="neu-button-secondary border-white text-white bg-transparent text-2xl py-6 px-12 hover:bg-white hover:text-black transition-colors">
+              SIGN IN
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

@@ -2,7 +2,7 @@ from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 from src.services.auth_service import AuthService
-from src.db.connection import get_db
+from src.db.connection import db_session
 
 def jwt_required_custom():
     """
@@ -17,12 +17,11 @@ def jwt_required_custom():
                 
                 # Get user ID from token
                 user_id = get_jwt_identity()
+                user_id = int(user_id)
                 
-                # Get database session
-                db = next(get_db())
-                
-                # Get user from database
-                user = AuthService.get_user_by_id(db, user_id)
+                with db_session() as db:
+                    # Get user from database
+                    user = AuthService.get_user_by_id(db, user_id)
                 
                 if not user:
                     return jsonify({
@@ -66,8 +65,9 @@ def optional_jwt():
                 user_id = get_jwt_identity()
                 
                 if user_id:
-                    db = next(get_db())
-                    user = AuthService.get_user_by_id(db, user_id)
+                    user_id = int(user_id)
+                    with db_session() as db:
+                        user = AuthService.get_user_by_id(db, user_id)
                     return f(current_user=user, *args, **kwargs)
                 else:
                     return f(current_user=None, *args, **kwargs)

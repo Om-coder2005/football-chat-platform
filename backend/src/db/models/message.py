@@ -12,6 +12,10 @@ class Message(Base):
     community_id = Column(Integer, ForeignKey('communities.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    is_highlighted = Column(DateTime, nullable=True) # Store timestamp of highlight, or null if not highlighted
+    media_url = Column(Text, nullable=True)
+    media_description = Column(Text, nullable=True)
+    
     # Relationships
     user = relationship('User', back_populates='messages')
     community = relationship('Community', back_populates='messages')
@@ -22,6 +26,10 @@ class Message(Base):
             'content': self.content,
             'user_id': self.user_id,
             'username': self.user.username if self.user else None,
+            'avatar_url': self.user.avatar_url if self.user else None,
             'community_id': self.community_id,
+            'is_highlighted': self.is_highlighted.isoformat() if self.is_highlighted else None,
+            'media_url': self.media_url,
+            'media_description': self.media_description,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }

@@ -2,7 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { messageAPI, communityAPI, matchAPI } from '../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
 import AppHeader from './AppHeader';
+import ClubNews from './ClubNews';
+import { MessageSquare, Users, Activity, Sparkles, Send, Paperclip, X, Trash2, Star, Shield, Info, RefreshCw, Trophy } from 'lucide-react';
 import '../styles/CommunityRoom.css';
 
 const CommunityRoom = () => {
@@ -11,20 +14,30 @@ const CommunityRoom = () => {
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('');
   const [community, setCommunity] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [matchData, setMatchData] = useState(null);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [loadingAI, setLoadingAI] = useState(false);
   const [communities, setCommunities] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('stats'); // 'stats' or 'members'
-  const [matchData, setMatchData] = useState(null);
+  const [activeTab, setActiveTab] = useState('stats'); // 'stats', 'news', or 'members'
   const [matchSource, setMatchSource] = useState('none');
-  const [members, setMembers] = useState([]);
+  const [messageActionLoading, setMessageActionLoading] = useState({});
+  const [memberActionLoading, setMemberActionLoading] = useState({});
+  const [showMediaInput, setShowMediaInput] = useState(false);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionFilter, setMentionFilter] = useState('');
+  const [mentionIndex, setMentionIndex] = useState(0);
   const messagesEndRef = useRef(null);
+  const [typingUsers, setTypingUsers] = useState(new Set());
+  const typingTimeoutRef = useRef(null);
 
   const token = localStorage.getItem('access_token');
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // Handle Authentication and Data Fetching
   useEffect(() => {
     if (!token) {
       navigate('/login');
@@ -34,19 +47,24 @@ const CommunityRoom = () => {
     fetchAllCommunities();
   }, [communityId]);
 
-  // Fetch match data
   useEffect(() => {
-    if (community) {
-      fetchMatchData();
+    if (community) fetchMatchData();
+  }, [community]);
+
+  // Tactical summary logic removed to focus on traditional match stats
+
+  useEffect(() => {
+    if (socket && communityId) {
+      const intervalId = setInterval(fetchMatchData, 60000);
+      return () => clearInterval(intervalId);
     }
   }, [community]);
 
-  // Handle Socket Lifecycle
   useEffect(() => {
     if (!token) return;
 
     const newSocket = io('http://localhost:5000', {
-      transports: ['websocket'], // More robust for real-time
+      transports: ['websocket'],
       auth: { token }
     });
 
@@ -61,9 +79,13 @@ const CommunityRoom = () => {
       setMessages((prev) => [...prev, data]);
     });
 
-    newSocket.on('error', (data) => {
-      alert(data.message);
-      if (data.message.includes('join')) navigate('/communities');
+    newSocket.on('typing_update', (data) => {
+      setTypingUsers(prev => {
+        const next = new Set(prev);
+        if (data.is_typing) next.add(data.username);
+        else next.delete(data.username);
+        return next;
+      });
     });
 
     setSocket(newSocket);
@@ -78,16 +100,11 @@ const CommunityRoom = () => {
     scrollToBottom();
   }, [messages]);
 
-  /**
-   * Fetch all available communities for the sidebar navigation
-   */
   const fetchAllCommunities = async () => {
     try {
       const response = await communityAPI.getAll();
       setCommunities(response.data.communities || []);
-    } catch (_error) {
-      // Silently handle - sidebar will show empty
-    }
+    } catch {}
   };
 
   const fetchCommunityAndMessages = async () => {
@@ -100,6 +117,11 @@ const CommunityRoom = () => {
       if (msgResponse.data.success) {
         setMessages(msgResponse.data.messages);
       }
+
+      const membersResponse = await communityAPI.getMembers(communityId);
+      if (membersResponse.data.success) {
+        setMembers(membersResponse.data.members || []);
+      }
     } catch (error) {
       if (error.response?.status === 403) navigate('/communities');
     } finally {
@@ -107,16 +129,8 @@ const CommunityRoom = () => {
     }
   };
 
-  /**
-   * Fetch match data specific to the community's club.
-   * Uses the community's club_name to find matches for that team today,
-   * falling back to the team's closest recent/upcoming match.
-   * Then fetches the full match details (including statistics, lineups, bookings)
-   * from the single-match endpoint.
-   */
   const fetchMatchData = async () => {
     const clubName = community?.club_name || community?.name || '';
-
     if (!clubName) {
       setMatchData(null);
       return;
@@ -124,226 +138,202 @@ const CommunityRoom = () => {
 
     try {
       const response = await matchAPI.getTeamMatchesByName(clubName);
-
       if (response.data.success && response.data.matches && response.data.matches.length > 0) {
-        const summaryMatch = response.data.matches[0];
+        const match = response.data.matches[0];
         setMatchSource(response.data.source || 'today');
-
-        // Fetch full match details (with statistics, lineups, bookings, etc.)
-        if (summaryMatch.id) {
+        
+        if (match.id) {
           try {
-            const detailRes = await matchAPI.getMatchDetails(summaryMatch.id);
-            if (detailRes.data.success && detailRes.data.match) {
+            const detailRes = await matchAPI.getMatchDetails(match.id);
+            if (detailRes.data.success) {
               setMatchData(detailRes.data.match);
               return;
             }
-          } catch (_detailErr) {
-            // Fall through to summary data if detail fetch fails
-          }
+          } catch {}
         }
-
-        setMatchData(summaryMatch);
+        setMatchData(match);
         return;
       }
-    } catch (_error) {
-      // Silently fall through to placeholder when API is unreachable
-    }
+    } catch {}
 
-    // Fallback: show "no match" placeholder for the community's team
     setMatchData({
       competition: { name: '' },
-      matchday: null,
       score: { fullTime: { home: null, away: null } },
-      homeTeam: { name: clubName, id: 0 },
-      awayTeam: { name: 'No match today', id: 0 },
+      homeTeam: { name: clubName },
+      awayTeam: { name: 'No match today' },
       status: 'SCHEDULED'
     });
-    setMatchSource('none');
   };
 
   const sendMessage = () => {
-    if (!inputMessage.trim() || !socket || !isConnected) return;
-
+    if ((!inputMessage.trim() && !mediaUrl.trim()) || !socket || !isConnected) return;
     socket.emit('send_message', {
       room: communityId,
       message: inputMessage.trim(),
+      media_url: mediaUrl.trim(),
       token,
     });
     setInputMessage('');
+    setMediaUrl('');
+    setShowMediaInput(false);
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setInputMessage(val);
+
+    if (socket && isConnected) {
+      socket.emit('typing', { room: communityId, token, is_typing: true });
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('typing', { room: communityId, token, is_typing: false });
+      }, 2000);
     }
+
+    const lastWord = val.split(' ').pop();
+    if (lastWord.startsWith('@')) {
+      setShowMentions(true);
+      setMentionFilter(lastWord.slice(1).toLowerCase());
+      setMentionIndex(0);
+    } else {
+      setShowMentions(false);
+    }
+  };
+
+  const insertMention = (username) => {
+    const words = inputMessage.split(' ');
+    words.pop();
+    words.push(`@${username} `);
+    setInputMessage(words.join(' '));
+    setShowMentions(false);
+    document.getElementById('chat-input').focus();
   };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  const formatMatchDate = (utcDate) => {
-    if (!utcDate) return '';
-    const d = new Date(utcDate);
-    return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) +
-      ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  /**
-   * Extract real stats from football-data.org v4 match response.
-   * The API provides homeTeam.statistics and awayTeam.statistics
-   * with fields like ball_possession, shots, corner_kicks, yellow_cards, red_cards.
-   * Falls back to 0 if data is missing (e.g. match hasn't started yet).
-   */
-  const getMatchStats = () => {
-    if (!matchData) return null;
-
-    const homeStat = matchData.homeTeam?.statistics;
-    const awayStat = matchData.awayTeam?.statistics;
-
-    // If the API returned embedded statistics objects, use them
-    if (homeStat && awayStat) {
-      return {
-        possession: { home: homeStat.ball_possession || 0, away: awayStat.ball_possession || 0 },
-        totalShots: { home: homeStat.total_shots || homeStat.shots || 0, away: awayStat.total_shots || awayStat.shots || 0 },
-        shotsOnTarget: { home: homeStat.shots_on_target || homeStat.shots_on_goal || 0, away: awayStat.shots_on_target || awayStat.shots_on_goal || 0 },
-        corners: { home: homeStat.corner_kicks || 0, away: awayStat.corner_kicks || 0 },
-        fouls: { home: homeStat.fouls || 0, away: awayStat.fouls || 0 },
-        saves: { home: homeStat.saves || 0, away: awayStat.saves || 0 },
-        offsides: { home: homeStat.offsides || 0, away: awayStat.offsides || 0 },
-        yellowCards: { home: homeStat.yellow_cards || 0, away: awayStat.yellow_cards || 0 },
-        redCards: { home: homeStat.red_cards || 0, away: awayStat.red_cards || 0 },
-      };
-    }
-
-    // No stats available yet (match not started or free tier doesn't include stats)
-    return null;
-  };
-
-  const matchStats = getMatchStats();
-
-  /**
-   * Get the match status label for display
-   */
-  const getStatusLabel = (status) => {
-    const statusMap = {
-      'SCHEDULED': 'Scheduled',
-      'TIMED': 'Upcoming',
-      'IN_PLAY': 'LIVE',
-      'PAUSED': 'Half Time',
-      'FINISHED': 'Full Time',
-      'SUSPENDED': 'Suspended',
-      'POSTPONED': 'Postponed',
-      'CANCELLED': 'Cancelled',
-      'AWARDED': 'Awarded',
-    };
-    return statusMap[status] || status || '';
-  };
-
-  const isMatchLive = matchData?.status === 'IN_PLAY' || matchData?.status === 'PAUSED' || matchData?.status === 'LIVE';
-
-  /**
-   * Get a human-readable label for the match source
-   * @returns {string} Source label like "Today", "Last Match", etc.
-   */
   const getSourceLabel = () => {
     if (matchSource === 'live') return 'LIVE NOW';
     if (matchSource === 'today' || matchSource === 'team_today') return "TODAY'S MATCH";
-    if (matchSource === 'closest') {
-      if (!matchData?.utcDate) return 'NEAREST MATCH';
-      const matchDate = new Date(matchData.utcDate);
-      const now = new Date();
-      return matchDate > now ? 'NEXT MATCH' : 'LAST RESULT';
-    }
+    if (matchSource === 'closest') return matchData?.status === 'FINISHED' ? 'LAST RESULT' : 'NEXT MATCH';
     return '';
   };
 
-  if (loading) {
-    return (
-      <div className="chat-view-wrapper">
-        <AppHeader />
-        <div className="loading-screen" aria-live="polite">Initializing…</div>
-      </div>
-    );
-  }
+  const getMatchStats = () => {
+    if (!matchData) return null;
+    const home = matchData.homeTeam?.statistics, away = matchData.awayTeam?.statistics;
+    if (!home || !away) return null;
+    return [
+      { label: 'Possession', home: home.ball_possession || 0, away: away.ball_possession || 0, suffix: '%', isPct: true },
+      { label: 'Total Shots', home: home.total_shots || home.shots || 0, away: away.total_shots || away.shots || 0 },
+      { label: 'Shots on Target', home: home.shots_on_target || home.shots_on_goal || 0, away: away.shots_on_target || away.shots_on_goal || 0 },
+      { label: 'Corner Kicks', home: home.corner_kicks || 0, away: away.corner_kicks || 0 },
+    ];
+  };
+
+  const getCombinedEvents = () => {
+    if (!matchData) return [];
+    // Tag each event with eventType to avoid collision with football-data's own 'type' field
+    const goals    = (matchData.goals    || []).map(g => ({ ...g, eventType: 'goal' }));
+    const bookings = (matchData.bookings || []).map(b => ({ ...b, eventType: 'card' }));
+    return [...goals, ...bookings].sort((a, b) => parseInt(a.minute) - parseInt(b.minute));
+  };
+
+  const canModerate = () => {
+    const role = members.find(m => m.user_id === currentUser.id)?.role;
+    return role === 'admin' || role === 'moderator';
+  };
+
+  if (loading) return (
+    <div className="chat-view-wrapper h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+      <h2 className="neu-heading text-6xl animate-pulse">WARMING UP…</h2>
+    </div>
+  );
 
   return (
     <div className="chat-view-wrapper">
       <AppHeader />
       <div className="chat-room-layout">
-        {/* Left Sidebar - Channels/Teams */}
+        
+        {/* Left Sidebar - Channels */}
         <aside className="chat-sidebar-left">
           <div className="sidebar-header">
             <div className="app-logo-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" />
-                <rect x="14" y="3" width="7" height="7" />
-                <rect x="3" y="14" width="7" height="7" />
-                <rect x="14" y="14" width="7" height="7" />
-              </svg>
+              <MessageSquare size={24} />
             </div>
-            {isConnected && <span className="status-dot" aria-label="Online" />}
+            {isConnected && <div className="status-dot w-3 h-3 bg-green-500 border-2 border-black rounded-full" />}
           </div>
           
           <div className="channels-list">
-            {communities.slice(0, 4).map((comm) => (
+            {communities.slice(0, 8).map((comm) => (
               <button
                 key={comm.id}
                 className={`channel-item ${comm.id === parseInt(communityId) ? 'active' : ''}`}
                 onClick={() => navigate(`/community/${comm.id}`)}
-                aria-label={`${comm.name} channel`}
               >
-                <div className="channel-logo">
-                  {comm.club_name ? (
-                    <span className="channel-logo-text">{comm.club_name.charAt(0)}</span>
-                  ) : (
-                    <span className="channel-logo-text">{comm.name.charAt(0)}</span>
-                  )}
-                </div>
+                <span className="channel-logo-text">{(comm.club_name || comm.name).charAt(0)}</span>
               </button>
             ))}
           </div>
 
-          <button className="add-channel-btn" aria-label="Add new channel">
+          <button className="add-channel-btn" onClick={() => navigate('/communities')}>
             <span>+</span>
-          </button>
-
-          <button className="user-profile-btn" aria-label="User profile">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
           </button>
         </aside>
 
-        {/* Center - Chat Area */}
+        {/* Main Chat Area */}
         <main className="chat-main-area">
           <div className="chat-header-bar">
-            <div className="chat-header-line" />
+            <div className="chat-header-info flex items-center gap-4">
+              <h2 className="neu-heading text-2xl tracking-widest">{community?.name}</h2>
+              <div className="comic-sticker bg-white text-black text-[10px] hidden sm:block">
+                {community?.club_name || 'GENERAL'}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+               <div className="font-archivo text-xs bg-black text-white px-3 py-1 flex items-center gap-2">
+                 <Users size={12} /> {members.length} FANS
+               </div>
+            </div>
           </div>
           
           <div className="messages-viewport">
             {messages.length === 0 ? (
-              <div className="empty-chat-placeholder">
-                <p>Pitch is empty. Start the play! ⚽</p>
+              <div className="empty-chat-placeholder h-full flex flex-col items-center justify-center opacity-20 rotate-[-5deg]">
+                <MessageSquare size={80} className="mb-4" />
+                <p className="text-4xl uppercase font-bebas">NO CHATTER YET</p>
               </div>
             ) : (
               messages.map((msg, idx) => (
                 <div
-                  key={idx}
-                  className={`msg-row ${msg.user_id === currentUser.id ? 'msg-own' : 'msg-other'}`}
+                  key={msg.id || idx}
+                  className={`msg-row ${msg.user_id === currentUser.id ? 'msg-own' : 'msg-other'} ${msg.is_highlighted ? 'msg-highlighted' : ''}`}
                 >
                   <div className="msg-bubble">
-                    <div className="msg-meta">
-                      <span className="msg-user">{msg.username}</span>
-                      <span className="msg-time">{formatTime(msg.created_at)}</span>
+                    {msg.is_highlighted && (
+                      <div className="highlight-badge text-[var(--accent-primary)] font-archivo text-[10px] flex items-center gap-1 mb-1">
+                        <Star size={10} fill="currentColor" /> HIGHLIGHTED
+                      </div>
+                    )}
+                    <div className="msg-meta flex justify-between items-center mb-1">
+                      <span className="msg-user text-[11px] font-archivo uppercase text-black/60">
+                        {msg.username}
+                      </span>
+                      <span className="msg-time text-[9px] font-inter font-bold opacity-60">
+                        {formatTime(msg.created_at)}
+                      </span>
                     </div>
-                    <div className="msg-text">{msg.content}</div>
+                    <div className="msg-text">
+                      {msg.content}
+                    </div>
+                    {msg.media_url && (
+                      <div className="mt-3 border-2 border-black shadow-[4px_4px_0px_0px_#000]">
+                        <img src={msg.media_url} alt="" className="w-full max-h-80 object-cover" />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -352,246 +342,258 @@ const CommunityRoom = () => {
           </div>
 
           <div className="chat-input-area">
+            {typingUsers.size > 0 && (
+              <div className="typing-indicator text-[10px] font-archivo opacity-60 mb-2 ml-2 italic">
+                {Array.from(typingUsers).join(', ')} typing...
+              </div>
+            )}
+            
+            <AnimatePresence>
+              {showMediaInput && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }} 
+                  animate={{ height: 'auto', opacity: 1 }} 
+                  exit={{ height: 0, opacity: 0 }}
+                  className="media-input-row flex items-center gap-3 bg-white border-4 border-black p-3 mb-4 shadow-[4px_4px_0px_0px_#000]"
+                >
+                  <Paperclip size={18} className="text-gray-400" />
+                  <input
+                    type="text"
+                    value={mediaUrl}
+                    onChange={(e) => setMediaUrl(e.target.value)}
+                    placeholder="IMAGE URL..."
+                    className="flex-1 outline-none font-inter font-bold text-sm"
+                  />
+                  <button onClick={() => setShowMediaInput(false)}><X size={18} /></button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="input-wrapper">
+              <button 
+                onClick={() => setShowMediaInput(!showMediaInput)}
+                className={`p-2 transition-colors ${showMediaInput ? 'text-[var(--accent-primary)]' : 'opacity-40'}`}
+              >
+                <Paperclip size={20} />
+              </button>
               <input
+                id="chat-input"
                 type="text"
                 value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={isConnected ? "Send a message…" : "Waiting for connection…"}
+                onChange={handleInputChange}
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                placeholder={isConnected ? 'CHANT SOMETHING...' : 'CONNECTING...'}
                 disabled={!isConnected}
               />
-              <button 
-                className="send-trigger" 
-                onClick={sendMessage} 
-                disabled={!isConnected || !inputMessage.trim()}
+              <button
+                className="send-btn bg-[var(--accent-primary)] text-white p-3 border-2 border-black shadow-[3px_3px_0px_0px_#000]"
+                onClick={sendMessage}
+                disabled={!isConnected || (!inputMessage.trim() && !mediaUrl.trim())}
               >
-                SEND
+                <Send size={18} />
               </button>
             </div>
           </div>
         </main>
 
-        {/* Right Sidebar - Match Stats */}
+        {/* Right Sidebar - Stats & News */}
         <aside className="chat-sidebar-right">
           <div className="sidebar-tabs">
-            <button
-              className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`}
-              onClick={() => setActiveTab('stats')}
-            >
-              MATCH STATS
-            </button>
-            <button
-              className={`tab-btn ${activeTab === 'members' ? 'active' : ''}`}
-              onClick={() => setActiveTab('members')}
-            >
-              MEMBERS
-            </button>
+            <button className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>STATS</button>
+            <button className={`tab-btn ${activeTab === 'news' ? 'active' : ''}`} onClick={() => setActiveTab('news')}>NEWS</button>
+            <button className={`tab-btn ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')}>FANS</button>
           </div>
 
-          {activeTab === 'stats' && (
-            <div className="match-stats-content">
-              {matchData ? (
-                <>
-                  {/* Source badge & Competition */}
-                  {getSourceLabel() && (
-                    <div className="match-source-badge">
-                      <span className={`source-label ${matchSource === 'live' ? 'source-live' : ''}`}>
-                        {getSourceLabel()}
-                      </span>
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            {activeTab === 'stats' && (
+              <div className="p-4 space-y-6 overflow-y-auto flex-1">
+                {matchData ? (
+                  <>
+                    <div className="match-source-badge mb-2">
+                       <span className="comic-sticker bg-black text-white text-[9px]">{getSourceLabel()}</span>
                     </div>
-                  )}
-                  <div className="match-header">
-                    <span className="match-league">
-                      {matchData.competition?.name || ''}
-                    </span>
-                    {matchData.matchday && (
-                      <span className="match-matchday">MATCHDAY {matchData.matchday}</span>
-                    )}
-                  </div>
-
-                  {/* Scoreboard */}
-                  <div className="match-scoreboard">
-                    <div className="scoreboard-team">
-                      {matchData.homeTeam?.crest ? (
-                        <img src={matchData.homeTeam.crest} alt="" className="scoreboard-crest" />
-                      ) : (
-                        <div className="scoreboard-crest-placeholder">
-                          {(matchData.homeTeam?.tla || matchData.homeTeam?.name?.charAt(0) || 'H')}
-                        </div>
-                      )}
-                      <span className="scoreboard-team-name">
-                        {matchData.homeTeam?.shortName || matchData.homeTeam?.name || 'Home'}
-                      </span>
-                    </div>
-
-                    <div className="scoreboard-score-area">
-                      <span className={`scoreboard-status ${isMatchLive ? 'live' : ''}`}>
-                        {isMatchLive && <span className="live-pulse" />}
-                        {getStatusLabel(matchData.status)}
-                        {matchData.minute ? ` ${matchData.minute}'` : ''}
-                      </span>
-                      <span className="scoreboard-score">
-                        {matchData.score?.fullTime?.home ?? '-'} - {matchData.score?.fullTime?.away ?? '-'}
-                      </span>
-                      {matchData.score?.halfTime?.home != null && (
-                        <span className="scoreboard-halftime">
-                          HT: {matchData.score.halfTime.home} - {matchData.score.halfTime.away}
-                        </span>
-                      )}
-                      {matchData.utcDate && (
-                        <span className="scoreboard-date">{formatMatchDate(matchData.utcDate)}</span>
-                      )}
-                    </div>
-
-                    <div className="scoreboard-team">
-                      {matchData.awayTeam?.crest ? (
-                        <img src={matchData.awayTeam.crest} alt="" className="scoreboard-crest" />
-                      ) : (
-                        <div className="scoreboard-crest-placeholder">
-                          {(matchData.awayTeam?.tla || matchData.awayTeam?.name?.charAt(0) || 'A')}
-                        </div>
-                      )}
-                      <span className="scoreboard-team-name">
-                        {matchData.awayTeam?.shortName || matchData.awayTeam?.name || 'Away'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Goals */}
-                  {matchData.goals && matchData.goals.length > 0 && (
-                    <div className="goals-section">
-                      <h3 className="stats-title">GOALS</h3>
-                      {matchData.goals.map((goal, i) => (
-                        <div key={i} className="goal-event">
-                          <span className="goal-minute">{goal.minute}'</span>
-                          <span className="goal-scorer">{goal.scorer?.name || 'Unknown'}</span>
-                          <span className="goal-type">
-                            {goal.type === 'PENALTY' ? '(P)' : goal.type === 'OWN' ? '(OG)' : ''}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Stats bars */}
-                  {matchStats ? (
-                    <div className="stats-section">
-                      <h3 className="stats-title">STATS</h3>
-                      {[
-                        { label: 'Possession', home: matchStats.possession.home, away: matchStats.possession.away, suffix: '%', isPct: true },
-                        { label: 'Total Shots', home: matchStats.totalShots.home, away: matchStats.totalShots.away },
-                        { label: 'On Target', home: matchStats.shotsOnTarget.home, away: matchStats.shotsOnTarget.away },
-                        { label: 'Corners', home: matchStats.corners.home, away: matchStats.corners.away },
-                        { label: 'Fouls', home: matchStats.fouls.home, away: matchStats.fouls.away },
-                        { label: 'Saves', home: matchStats.saves.home, away: matchStats.saves.away },
-                        { label: 'Offsides', home: matchStats.offsides.home, away: matchStats.offsides.away },
-                        { label: 'Yellow Cards', home: matchStats.yellowCards.home, away: matchStats.yellowCards.away },
-                        { label: 'Red Cards', home: matchStats.redCards.home, away: matchStats.redCards.away },
-                      ].map((stat) => {
-                        const total = stat.home + stat.away || 1;
-                        const leftPct = stat.isPct ? stat.home : (stat.home / total) * 100;
-                        const rightPct = stat.isPct ? stat.away : (stat.away / total) * 100;
-                        return (
-                          <div key={stat.label} className="stat-item">
-                            <div className="stat-bar">
-                              <div className="stat-bar-left" style={{ width: `${leftPct}%` }}>
-                                <span className="stat-value">{stat.home}{stat.suffix || ''}</span>
-                              </div>
-                              <span className="stat-label">{stat.label}</span>
-                              <div className="stat-bar-right" style={{ width: `${rightPct}%` }}>
-                                <span className="stat-value">{stat.away}{stat.suffix || ''}</span>
-                              </div>
-                            </div>
+                    
+                    <div className="neu-card bg-white p-4">
+                       <p className="font-archivo text-[10px] opacity-60 mb-2 uppercase border-b border-black pb-1">
+                         {matchData.competition?.name || 'MATCHDAY'}
+                       </p>
+                       <div className="flex items-center justify-between gap-4">
+                          <div className="flex flex-col items-center flex-1">
+                             <div className="w-12 h-12 bg-gray-100 border-2 border-black flex items-center justify-center shadow-[3px_3px_0px_0px_#000] mb-2">
+                               {matchData.homeTeam?.crest ? <img src={matchData.homeTeam.crest} className="w-8 h-8 object-contain" alt="" /> : <Shield size={24} />}
+                             </div>
+                             <span className="font-archivo text-[10px] text-center uppercase leading-tight">{matchData.homeTeam?.shortName || matchData.homeTeam?.name}</span>
                           </div>
-                        );
-                      })}
+                          <div className="flex flex-col items-center gap-1">
+                             <div className="font-bebas text-4xl bg-black text-white px-3 shadow-[3px_3px_0px_0px_var(--accent-primary)]">
+                               {matchData.score?.fullTime?.home ?? '-'} : {matchData.score?.fullTime?.away ?? '-'}
+                             </div>
+                             <span className={`font-archivo text-[9px] text-white px-2 py-0.5 mt-1 ${
+                               matchData.status === 'IN_PLAY' || matchData.status === 'PAUSED'
+                                 ? 'bg-green-500 animate-pulse'
+                                 : matchData.status === 'FINISHED'
+                                   ? 'bg-gray-600'
+                                   : 'bg-blue-600'
+                             }`}>
+                               {matchData.status === 'IN_PLAY' ? 'LIVE' : matchData.status === 'PAUSED' ? 'HALF TIME' : matchData.status === 'FINISHED' ? 'FULL TIME' : matchData.status || 'UPCOMING'}
+                             </span>
+                          </div>
+                          <div className="flex flex-col items-center flex-1">
+                             <div className="w-12 h-12 bg-gray-100 border-2 border-black flex items-center justify-center shadow-[3px_3px_0px_0px_#000] mb-2">
+                               {matchData.awayTeam?.crest ? <img src={matchData.awayTeam.crest} className="w-8 h-8 object-contain" alt="" /> : <Shield size={24} />}
+                             </div>
+                             <span className="font-archivo text-[10px] text-center uppercase leading-tight">{matchData.awayTeam?.shortName || matchData.awayTeam?.name}</span>
+                          </div>
+                       </div>
                     </div>
-                  ) : (
-                    <div className="stats-section">
-                      <h3 className="stats-title">STATS</h3>
-                      <p className="no-stats-msg">
-                        {matchData.status === 'SCHEDULED' || matchData.status === 'TIMED'
-                          ? 'Stats will be available once the match kicks off'
-                          : matchData.status === 'FINISHED'
-                            ? 'Detailed stats not available for this match'
-                            : 'No stats available'}
-                      </p>
-                    </div>
-                  )}
 
-                  {/* Starting XI */}
-                  {(matchData.homeTeam?.lineup?.length > 0 || matchData.awayTeam?.lineup?.length > 0) && (
-                    <div className="starting-xi-section">
-                      <h3 className="stats-title">
-                        STARTING XI
-                        {matchData._ai_enriched && (
-                          <span className="ai-badge-sm">AI</span>
-                        )}
-                      </h3>
-                      <div className="lineup-columns">
-                        <div className="lineup-col">
-                          <span className="lineup-team-label">
-                            {matchData.homeTeam?.shortName || matchData.homeTeam?.name || 'Home'}
-                            {matchData.homeTeam?.formation && ` (${matchData.homeTeam.formation})`}
-                          </span>
-                          {matchData.homeTeam?.lineup?.map((p, i) => (
-                            <div key={i} className="lineup-player">
-                              <span className="lineup-number">{p.shirtNumber || ''}</span>
-                              <span className="lineup-name">{p.name}</span>
-                            </div>
-                          ))}
-                          {matchData.homeTeam?.coach?.name && (
-                            <div className="lineup-coach">
-                              Coach: {matchData.homeTeam.coach.name}
-                            </div>
-                          )}
-                        </div>
-                        <div className="lineup-col">
-                          <span className="lineup-team-label">
-                            {matchData.awayTeam?.shortName || matchData.awayTeam?.name || 'Away'}
-                            {matchData.awayTeam?.formation && ` (${matchData.awayTeam.formation})`}
-                          </span>
-                          {matchData.awayTeam?.lineup?.map((p, i) => (
-                            <div key={i} className="lineup-player">
-                              <span className="lineup-number">{p.shirtNumber || ''}</span>
-                              <span className="lineup-name">{p.name}</span>
-                            </div>
-                          ))}
-                          {matchData.awayTeam?.coach?.name && (
-                            <div className="lineup-coach">
-                              Coach: {matchData.awayTeam.coach.name}
-                            </div>
-                          )}
+                    {/* Goals & Events — or score-based fallback */}
+                    {getCombinedEvents().length > 0 ? (
+                      <div className="neu-card bg-white p-4">
+                        <h4 className="font-bebas text-xl border-b-2 border-black mb-3">MATCH EVENTS</h4>
+                        <div className="space-y-3">
+                          {getCombinedEvents().map((event, idx) => (
+                              <div key={idx} className="flex items-center gap-3 text-[10px] font-inter">
+                                <span className="bg-black text-white px-1.5 py-0.5 font-archivo min-w-[28px] text-center">{event.minute}'</span>
+                                {event.eventType === 'goal' ? (
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <Trophy size={10} className="text-yellow-500 shrink-0" />
+                                    <span className="font-bold uppercase truncate">{event.scorer?.name || 'Unknown'}</span>
+                                    <span className="opacity-40 ml-auto shrink-0">
+                                      {event.team?.id === matchData.homeTeam?.id ? 'H' : 'A'}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <div className={`w-2 h-3 border border-black shrink-0 ${event.card === 'YELLOW_CARD' || event.card === 'YELLOW' ? 'bg-yellow-400' : 'bg-red-600'}`}></div>
+                                    <span className="font-bold uppercase truncate">{event.player?.name || 'Unknown'}</span>
+                                    <span className="opacity-40 ml-auto shrink-0">
+                                      {event.team?.id === matchData.homeTeam?.id ? 'H' : 'A'}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    ) : (() => {
+                      // Score-based fallback — show goals per team when scorer names aren't available yet
+                      const sh = matchData.score?.fullTime?.home;
+                      const sa = matchData.score?.fullTime?.away;
+                      const isFinishedWithGoals = matchData.status === 'FINISHED' && ((sh || 0) + (sa || 0)) > 0;
+                      if (!isFinishedWithGoals) return null;
+                      return (
+                        <div className="neu-card bg-white p-4">
+                          <h4 className="font-bebas text-xl border-b-2 border-black mb-3">SCORE SUMMARY</h4>
+                          <div className="space-y-2">
+                            {sh > 0 && Array.from({length: sh}).map((_, i) => (
+                              <div key={`h${i}`} className="flex items-center gap-3 text-[10px] font-inter">
+                                <span className="bg-black text-white px-1.5 py-0.5 font-archivo min-w-[28px] text-center">–</span>
+                                <div className="flex items-center gap-2 flex-1">
+                                  <Trophy size={10} className="text-yellow-500 shrink-0" />
+                                  <span className="font-bold uppercase truncate opacity-50">Scorer details loading…</span>
+                                  <span className="opacity-40 ml-auto shrink-0">H</span>
+                                </div>
+                              </div>
+                            ))}
+                            {sa > 0 && Array.from({length: sa}).map((_, i) => (
+                              <div key={`a${i}`} className="flex items-center gap-3 text-[10px] font-inter">
+                                <span className="bg-black text-white px-1.5 py-0.5 font-archivo min-w-[28px] text-center">–</span>
+                                <div className="flex items-center gap-2 flex-1">
+                                  <Trophy size={10} className="text-yellow-500 shrink-0" />
+                                  <span className="font-bold uppercase truncate opacity-50">Scorer details loading…</span>
+                                  <span className="opacity-40 ml-auto shrink-0">A</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="font-inter text-[8px] opacity-30 mt-3 uppercase">Scorer data will appear shortly</p>
+                        </div>
+                      );
+                    })()}
 
-                  {/* Referees */}
-                  {matchData.referees && matchData.referees.length > 0 && (
-                    <div className="referees-section">
-                      <h3 className="stats-title">REFEREE</h3>
-                      <span className="referee-name">
-                        {matchData.referees.find(r => r.type === 'REFEREE')?.name || matchData.referees[0]?.name}
-                      </span>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="no-stats-msg">Loading match data...</p>
-              )}
-            </div>
-          )}
+                    {/* Statistics */}
+                    {getMatchStats() && (
+                      <div className="neu-card bg-black text-white p-4">
+                        <h4 className="font-bebas text-xl border-b border-white/20 mb-4 text-yellow-400">MATCH STATS</h4>
+                        <div className="space-y-4">
+                          {getMatchStats().map((stat, idx) => {
+                            const total = (stat.home || 0) + (stat.away || 0) || 1;
+                            const hPct = stat.isPct ? stat.home : (stat.home / total) * 100;
+                            const aPct = stat.isPct ? stat.away : (stat.away / total) * 100;
+                            return (
+                              <div key={idx} className="space-y-1">
+                                <div className="flex justify-between text-[9px] font-archivo uppercase">
+                                  <span>{stat.home}{stat.suffix || ''}</span>
+                                  <span className="opacity-40">{stat.label}</span>
+                                  <span>{stat.away}{stat.suffix || ''}</span>
+                                </div>
+                                <div className="h-1 bg-white/10 flex">
+                                  <div className="bg-yellow-400" style={{ width: `${hPct}%` }}></div>
+                                  <div className="bg-white/20" style={{ width: `${aPct}%` }}></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
-          {activeTab === 'members' && (
-            <div className="members-content">
-              <div className="members-header">
-                <span className="members-count">{community?.member_count || 0} members</span>
+                    {/* Lineups */}
+                    {(matchData.homeTeam?.lineup?.length > 0 || matchData.awayTeam?.lineup?.length > 0) && (
+                      <div className="neu-card bg-white p-4">
+                        <h4 className="font-bebas text-xl border-b-2 border-black mb-3">LINEUPS</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          {[matchData.homeTeam, matchData.awayTeam].map((team, tIdx) => (
+                            <div key={tIdx} className="space-y-2 overflow-hidden">
+                              <p className="font-archivo text-[9px] uppercase border-b border-black/10 pb-1 font-bold truncate">{team?.shortName || team?.name}</p>
+                              <div className="space-y-1">
+                                {team?.lineup?.slice(0, 11).map((player, pIdx) => (
+                                  <div key={pIdx} className="flex items-center gap-1.5 text-[9px] font-inter font-bold truncate">
+                                    <span className="text-[8px] opacity-40 w-3">{player.shirtNumber}</span>
+                                    <span className="truncate">{player.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="neu-card bg-white/50 border-dashed py-12 flex flex-col items-center text-center">
+                    <Info size={32} className="text-gray-300 mb-2" />
+                    <p className="font-archivo text-xs text-gray-400">NO LIVE MATCH DATA</p>
+                  </div>
+                )}
               </div>
-              <p className="members-placeholder">Member list coming soon</p>
-            </div>
-          )}
+            )}
+
+            {activeTab === 'news' && (
+              <ClubNews clubName={community?.club_name || community?.name} />
+            )}
+
+            {activeTab === 'members' && (
+              <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                <h3 className="neu-heading text-xl mb-4 border-b-2 border-black pb-2">THE FIRM ({members.length})</h3>
+                {members.map(member => (
+                  <div key={member.user_id} className="neu-box bg-white p-3 flex items-center gap-3">
+                    <div className="w-10 h-10 border-2 border-black bg-[var(--accent-secondary)] flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
+                       <span className="text-white font-archivo">{member.username.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                       <div className="flex items-center gap-2">
+                         <span className="font-archivo text-xs uppercase truncate">{member.username}</span>
+                         {member.role === 'admin' && <Shield size={10} className="text-red-500" />}
+                       </div>
+                       <span className="font-inter text-[10px] font-bold text-gray-400 uppercase tracking-widest">{member.role}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </aside>
       </div>
     </div>

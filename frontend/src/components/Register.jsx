@@ -1,150 +1,141 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import '../styles/auth.css';
+import AppHeader from './AppHeader';
+import { User, Mail, Lock, Trophy, UserPlus, AlertCircle } from 'lucide-react';
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    favorite_club: '',
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { register } = useContext(AuthContext);
-  const navigate = useNavigate();
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const [username, setUsername] = useState('');
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [favoriteClub, setFavoriteClub] = useState('');
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const { register }            = useContext(AuthContext);
+  const navigate                = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-
-    setLoading(true);
-
+    setError(''); setLoading(true);
     try {
-      await register(
-        formData.username,
-        formData.email,
-        formData.password,
-        formData.favorite_club
-      );
-      alert('Registration successful! Please login.');
-      navigate('/login');
+      await register(username, email, password, favoriteClub);
+      navigate('/login'); // Better UX to go to login first to verify
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      setError(err.response?.data?.message || 'Registration failed. Try again.');
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1>CASA ULTRAS</h1>
-        <h2>Create account</h2>
-        
-        {error && <div className="error-message">{error}</div>}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="register-username">Username *</label>
-            <input
-              id="register-username"
-              type="text"
-              name="username"
-              autoComplete="username"
-              spellCheck={false}
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="e.g. fan99"
-              required
-              minLength={3}
-            />
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+      <AppHeader />
+      
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem 1.5rem' }}>
+        <div className="neu-card" style={{ maxWidth: '520px', width: '100%', background: 'var(--card-bg)', position: 'relative', overflow: 'visible' }}>
+          
+          {/* Decorative Sticker */}
+          <div className="comic-sticker" style={{ position: 'absolute', top: '-25px', left: '-15px', background: '#10b981', color: '#000', transform: 'rotate(-12deg)', fontSize: '0.8rem', fontWeight: 900 }}>
+            JOIN THE FIRM
           </div>
 
-          <div className="form-group">
-            <label htmlFor="register-email">Email *</label>
-            <input
-              id="register-email"
-              type="email"
-              name="email"
-              autoComplete="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="you@example.com"
-              required
-            />
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h2 style={{ fontFamily: '"Archivo Black", sans-serif', fontSize: '2.5rem', marginBottom: '0.5rem', textTransform: 'uppercase', lineHeight: 1 }}>
+              GET YOUR COLORS
+            </h2>
+            <p style={{ fontFamily: '"Inter", sans-serif', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              Join thousands of fans in the digital stands
+            </p>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="register-favorite-club">Favorite club</label>
-            <input
-              id="register-favorite-club"
-              type="text"
-              name="favorite_club"
-              autoComplete="off"
-              value={formData.favorite_club}
-              onChange={handleChange}
-              placeholder="e.g. Liverpool FC"
-            />
+          {error && (
+            <div style={{ background: '#ff3b30', color: '#fff', border: '3px solid #000', padding: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 800, boxShadow: '4px 4px 0 #000' }}>
+              <AlertCircle size={20} /> {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontFamily: '"Archivo Black", sans-serif', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <User size={12} /> Username
+              </label>
+              <input 
+                id="reg-username" 
+                type="text" 
+                value={username} 
+                onChange={e => setUsername(e.target.value)} 
+                placeholder="UltrasFan_01" 
+                required 
+                className="neu-input"
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontFamily: '"Archivo Black", sans-serif', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Mail size={12} /> Email
+              </label>
+              <input 
+                id="reg-email" 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                placeholder="you@stadium.com" 
+                required 
+                className="neu-input"
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontFamily: '"Archivo Black", sans-serif', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Trophy size={12} /> Favorite Club
+              </label>
+              <input 
+                id="reg-club" 
+                type="text" 
+                value={favoriteClub} 
+                onChange={e => setFavoriteClub(e.target.value)} 
+                placeholder="e.g. Real Madrid" 
+                required 
+                className="neu-input"
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontFamily: '"Archivo Black", sans-serif', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Lock size={12} /> Password
+              </label>
+              <input 
+                id="reg-password" 
+                type="password" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                placeholder="Min. 8 chars, Upper, Lower, Num" 
+                required 
+                className="neu-input"
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="neu-button" 
+              style={{ marginTop: '0.5rem', background: '#10b981', color: '#000', fontSize: '1.25rem', padding: '1rem', width: '100%', justifyContent: 'center' }}
+            >
+              {loading ? 'PROCESSING...' : (
+                <>
+                  <UserPlus size={20} style={{ marginRight: '8px' }} /> SIGN UP
+                </>
+              )}
+            </button>
+          </form>
+
+          <div style={{ marginTop: '2rem', textAlign: 'center', paddingTop: '1.5rem', borderTop: '2px dashed var(--border-color)' }}>
+            <p style={{ fontFamily: '"Inter", sans-serif', fontWeight: 700 }}>
+              Already part of the firm?{' '}
+              <Link to="/login" style={{ color: '#10b981', textDecoration: 'underline', textDecorationThickness: '3px' }}>
+                Login here
+              </Link>
+            </p>
           </div>
-
-          <div className="form-group">
-            <label htmlFor="register-password">Password *</label>
-            <input
-              id="register-password"
-              type="password"
-              name="password"
-              autoComplete="new-password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              minLength={8}
-            />
-            <small>At least 8 characters, 1 uppercase, 1 lowercase, 1 number</small>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="register-confirm-password">Confirm password *</label>
-            <input
-              id="register-confirm-password"
-              type="password"
-              name="confirmPassword"
-              autoComplete="new-password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <button type="submit" disabled={loading} className="submit-btn">
-            {loading ? 'Creating account…' : 'Register'}
-          </button>
-        </form>
-
-        <p className="auth-footer">
-          Already have an account? <Link to="/login">Login here</Link>
-        </p>
+        </div>
       </div>
     </div>
   );
