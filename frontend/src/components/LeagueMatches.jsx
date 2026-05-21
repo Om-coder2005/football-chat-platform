@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { matchAPI } from '../services/api';
+import { formatTime, getStatusLabel, getStatusColor } from '../utils/formatters';
 import AppHeader from './AppHeader';
 
 const STATUS_FILTERS = [
@@ -43,26 +44,7 @@ const LeagueMatches = () => {
     setLoading(false);
   };
 
-  const formatMatchDate = (utcDate) => {
-    if (!utcDate) return '';
-    return new Date(utcDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
 
-  const formatMatchTime = (utcDate) => {
-    if (!utcDate) return '';
-    return new Date(utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const getStatusColor = (status) => {
-    if (status === 'IN_PLAY' || status === 'PAUSED') return 'bg-red-500 text-white animate-pulse';
-    if (status === 'FINISHED') return 'bg-black text-white';
-    return 'bg-gray-200 text-gray-800';
-  };
-
-  const getStatusLabel = (status) => {
-    const map = { SCHEDULED: 'SCH', TIMED: 'SCH', IN_PLAY: 'LIVE', PAUSED: 'HT', FINISHED: 'FT', SUSPENDED: 'SUSP', POSTPONED: 'PPD', CANCELLED: 'CANC' };
-    return map[status] || status || '';
-  };
 
   const getFilteredMatches = () => {
     if (activeFilter === 'all') return matches;
@@ -179,8 +161,8 @@ const LeagueMatches = () => {
                             <span className={`font-archivo text-xs px-2 py-0.5 border border-black ${getStatusColor(match.status)}`}>
                               {getStatusLabel(match.status)}
                             </span>
-                            <p className="font-inter text-xs text-gray-400 mt-0.5">{formatMatchDate(match.utcDate)}</p>
-                            <p className="font-inter text-xs text-gray-400">{formatMatchTime(match.utcDate)}</p>
+                            <p className="font-inter text-xs text-gray-400 mt-0.5">{match.utcDate ? new Date(match.utcDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''}</p>
+                            <p className="font-inter text-xs text-gray-400">{formatTime(match.utcDate)}</p>
                           </div>
 
                           <div className="flex items-center gap-3 flex-1 justify-end">

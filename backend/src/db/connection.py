@@ -7,10 +7,7 @@ from src.db.models.community_member import CommunityMember
 from src.db.models.message import Message
 from src.db.models.club_news import ClubNews
 import os
-from dotenv import load_dotenv
 from pathlib import Path
-
-load_dotenv()
 
 # Get database URL from environment
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///football_chat.db')

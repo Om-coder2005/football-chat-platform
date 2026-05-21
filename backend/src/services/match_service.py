@@ -3,10 +3,7 @@ import os
 import logging
 import time
 import json
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 

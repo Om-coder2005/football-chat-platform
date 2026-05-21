@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { matchAPI } from '../services/api';
 import AppHeader from './AppHeader';
+import { formatTime, formatDateParam, getStatusLabel, getStatusColor } from '../utils/formatters';
 import { Activity, Calendar, ChevronLeft, ChevronRight, Trophy, AlertTriangle, ArrowRight } from 'lucide-react';
 
 const FREE_TIER_LEAGUES = [
@@ -17,12 +18,7 @@ const FREE_TIER_LEAGUES = [
   { id: 2013, name: 'Campeonato Brasileiro Serie A', code: 'BSA', country: 'Brazil' },
 ];
 
-const formatDateParam = (date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-};
+
 
 const LiveScores = () => {
   const [groupedMatches, setGroupedMatches] = useState([]);
@@ -113,24 +109,7 @@ const LiveScores = () => {
     }
   };
 
-  const formatMatchTime = (utcDate) => {
-    if (!utcDate) return '';
-    return new Date(utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
 
-  const getStatusLabel = (status) => {
-    const map = {
-      SCHEDULED: 'SCH', TIMED: 'SCH', IN_PLAY: 'LIVE', PAUSED: 'HT',
-      FINISHED: 'FT', SUSPENDED: 'SUSP', POSTPONED: 'PPD', CANCELLED: 'CANC', AWARDED: 'AWD',
-    };
-    return map[status] || status || '';
-  };
-
-  const getStatusColor = (status) => {
-    if (status === 'IN_PLAY' || status === 'PAUSED') return 'bg-red-500 text-white animate-pulse';
-    if (status === 'FINISHED') return 'bg-black text-white';
-    return 'bg-gray-300 text-black';
-  };
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
@@ -234,7 +213,7 @@ const LiveScores = () => {
                           <span className={`font-archivo text-xs px-2 py-1 border border-black ${getStatusColor(match.status)}`}>
                             {getStatusLabel(match.status)}
                           </span>
-                          <p className="font-inter font-bold text-xs mt-1 opacity-60">{formatMatchTime(match.utcDate)}</p>
+                          <p className="font-inter font-bold text-xs mt-1 opacity-60">{formatTime(match.utcDate)}</p>
                         </div>
 
                         {/* Home Team */}

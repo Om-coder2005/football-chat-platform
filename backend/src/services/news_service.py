@@ -111,39 +111,35 @@ class NewsService:
                     # It's a match for this club
                     club_articles.append(article)
             
-            # Store them
+            # Store them (batched per club)
             for article in club_articles:
-                # Check if exists by URL to prevent duplicates across clubs or same club
-                # Actually, an article might belong to multiple clubs (e.g. Madrid vs Barca match)
-                # But we should save it once per club_name and article_url pair.
                 existing = db.query(ClubNews).filter_by(club_name=club, article_url=article["article_url"]).first()
                 if not existing:
-                    try:
-                        news_entry = ClubNews(
-                            club_name=club,
-                            title=article["title"],
-                            description=article["description"],
-                            image_url=article["image_url"],
-                            article_url=article["article_url"],
-                            source_name=article["source_name"],
-                            published_at=article["published_at"]
-                        )
-                        db.add(news_entry)
-                        db.commit()
-                        new_articles_count += 1
-                    except IntegrityError:
-                        db.rollback()
-                        pass
-        
-        # Cleanup old news (keep only latest 50 per club)
+                    news_entry = ClubNews(
+                        club_name=club,
+                        title=article["title"],
+                        description=article["description"],
+                        image_url=article["image_url"],
+                        article_url=article["article_url"],
+                        source_name=article["source_name"],
+                        published_at=article["published_at"]
+                    )
+                    db.add(news_entry)
+                    new_articles_count += 1
+
+            # Commit once per club instead of per article
+            try:
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+
+        # Cleanup old news (keep only latest 50 per club) -- single pass
         for club in CLUB_KEYWORDS.keys():
-            # Find IDs to delete
-            # Note: For SQLite this might need to be done by subquery, but we can just fetch and delete
             news_to_keep = db.query(ClubNews).filter_by(club_name=club).order_by(ClubNews.published_at.desc()).limit(50).all()
             if news_to_keep:
                 keep_ids = [n.news_id for n in news_to_keep]
                 db.query(ClubNews).filter(ClubNews.club_name == club, ClubNews.news_id.notin_(keep_ids)).delete(synchronize_session=False)
-                db.commit()
+        db.commit()
 
         logger.info(f"News fetch complete. Inserted {new_articles_count} new articles.")
 

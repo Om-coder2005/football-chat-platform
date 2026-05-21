@@ -172,20 +172,17 @@ class CommunityService:
         if not target_membership:
             return False, "Target user is not a member of this community", 404
 
+        # Query admin count once for both checks below
+        admin_count = db.query(CommunityMember).filter_by(
+            community_id=community_id,
+            role='admin'
+        ).count()
+
         if target_membership.user_id == actor_user_id and role != 'admin':
-            # Allow demoting self only if there's at least one other admin
-            admin_count = db.query(CommunityMember).filter_by(
-                community_id=community_id,
-                role='admin'
-            ).count()
             if admin_count <= 1:
                 return False, "You cannot demote yourself as the last admin", 400
 
         if target_membership.role == 'admin' and role != 'admin':
-            admin_count = db.query(CommunityMember).filter_by(
-                community_id=community_id,
-                role='admin'
-            ).count()
             if admin_count <= 1:
                 return False, "Cannot demote the last admin", 400
 
