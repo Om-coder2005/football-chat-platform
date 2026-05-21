@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { messageAPI, communityAPI, matchAPI } from '../services/api';
+import { formatTime } from '../utils/formatters';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppHeader from './AppHeader';
 import ClubNews from './ClubNews';
@@ -44,7 +45,6 @@ const CommunityRoom = () => {
       return;
     }
     fetchCommunityAndMessages();
-    fetchAllCommunities();
   }, [communityId]);
 
   useEffect(() => {
@@ -100,17 +100,12 @@ const CommunityRoom = () => {
     scrollToBottom();
   }, [messages]);
 
-  const fetchAllCommunities = async () => {
-    try {
-      const response = await communityAPI.getAll();
-      setCommunities(response.data.communities || []);
-    } catch {}
-  };
-
   const fetchCommunityAndMessages = async () => {
     try {
       const commResponse = await communityAPI.getAll();
-      const comm = commResponse.data.communities.find((c) => c.id === parseInt(communityId));
+      const allCommunities = commResponse.data.communities || [];
+      setCommunities(allCommunities);
+      const comm = allCommunities.find((c) => c.id === parseInt(communityId));
       setCommunity(comm);
 
       const msgResponse = await messageAPI.getHistory(communityId, 50, 0);
@@ -139,19 +134,8 @@ const CommunityRoom = () => {
     try {
       const response = await matchAPI.getTeamMatchesByName(clubName);
       if (response.data.success && response.data.matches && response.data.matches.length > 0) {
-        const match = response.data.matches[0];
+        setMatchData(response.data.matches[0]);
         setMatchSource(response.data.source || 'today');
-        
-        if (match.id) {
-          try {
-            const detailRes = await matchAPI.getMatchDetails(match.id);
-            if (detailRes.data.success) {
-              setMatchData(detailRes.data.match);
-              return;
-            }
-          } catch {}
-        }
-        setMatchData(match);
         return;
       }
     } catch {}
@@ -213,8 +197,6 @@ const CommunityRoom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const formatTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
   const getSourceLabel = () => {
     if (matchSource === 'live') return 'LIVE NOW';
     if (matchSource === 'today' || matchSource === 'team_today') return "TODAY'S MATCH";
@@ -222,7 +204,14 @@ const CommunityRoom = () => {
     return '';
   };
 
-  const getMatchStats = () => {
+  const combinedEvents = useMemo(() => {
+    if (!matchData) return [];
+    const goals    = (matchData.goals    || []).map(g => ({ ...g, eventType: 'goal' }));
+    const bookings = (matchData.bookings || []).map(b => ({ ...b, eventType: 'card' }));
+    return [...goals, ...bookings].sort((a, b) => parseInt(a.minute) - parseInt(b.minute));
+  }, [matchData]);
+
+  const matchStats = useMemo(() => {
     if (!matchData) return null;
     const home = matchData.homeTeam?.statistics, away = matchData.awayTeam?.statistics;
     if (!home || !away) return null;
@@ -232,20 +221,12 @@ const CommunityRoom = () => {
       { label: 'Shots on Target', home: home.shots_on_target || home.shots_on_goal || 0, away: away.shots_on_target || away.shots_on_goal || 0 },
       { label: 'Corner Kicks', home: home.corner_kicks || 0, away: away.corner_kicks || 0 },
     ];
-  };
+  }, [matchData]);
 
-  const getCombinedEvents = () => {
-    if (!matchData) return [];
-    // Tag each event with eventType to avoid collision with football-data's own 'type' field
-    const goals    = (matchData.goals    || []).map(g => ({ ...g, eventType: 'goal' }));
-    const bookings = (matchData.bookings || []).map(b => ({ ...b, eventType: 'card' }));
-    return [...goals, ...bookings].sort((a, b) => parseInt(a.minute) - parseInt(b.minute));
-  };
-
-  const canModerate = () => {
+  const isModerator = useMemo(() => {
     const role = members.find(m => m.user_id === currentUser.id)?.role;
     return role === 'admin' || role === 'moderator';
-  };
+  }, [members, currentUser.id]);
 
   if (loading) return (
     <div className="chat-view-wrapper h-screen bg-[var(--bg-primary)] flex items-center justify-center">
@@ -448,11 +429,11 @@ const CommunityRoom = () => {
                     </div>
 
                     {/* Goals & Events — or score-based fallback */}
-                    {getCombinedEvents().length > 0 ? (
+                    {combinedEvents.length > 0 ? (
                       <div className="neu-card bg-white p-4">
                         <h4 className="font-bebas text-xl border-b-2 border-black mb-3">MATCH EVENTS</h4>
                         <div className="space-y-3">
-                          {getCombinedEvents().map((event, idx) => (
+                          {combinedEvents.map((event, idx) => (
                               <div key={idx} className="flex items-center gap-3 text-[10px] font-inter">
                                 <span className="bg-black text-white px-1.5 py-0.5 font-archivo min-w-[28px] text-center">{event.minute}'</span>
                                 {event.eventType === 'goal' ? (
@@ -513,11 +494,11 @@ const CommunityRoom = () => {
                     })()}
 
                     {/* Statistics */}
-                    {getMatchStats() && (
+                    {matchStats && (
                       <div className="neu-card bg-black text-white p-4">
                         <h4 className="font-bebas text-xl border-b border-white/20 mb-4 text-yellow-400">MATCH STATS</h4>
                         <div className="space-y-4">
-                          {getMatchStats().map((stat, idx) => {
+                          {matchStats.map((stat, idx) => {
                             const total = (stat.home || 0) + (stat.away || 0) || 1;
                             const hPct = stat.isPct ? stat.home : (stat.home / total) * 100;
                             const aPct = stat.isPct ? stat.away : (stat.away / total) * 100;

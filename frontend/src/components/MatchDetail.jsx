@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { matchAPI } from '../services/api';
+import { formatTime } from '../utils/formatters';
 import AppHeader from './AppHeader';
-import { ChevronLeft, AlertTriangle, Activity, Shield, Info, Calendar, Clock, Trophy, Sparkles, RefreshCw } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Activity, Shield, Info, Calendar, Clock, Trophy, RefreshCw } from 'lucide-react';
 
 const MatchDetail = () => {
   const { matchId } = useParams();
@@ -11,33 +12,7 @@ const MatchDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [aiSummary, setAiSummary] = useState(null);
-  const [loadingAI, setLoadingAI] = useState(false);
-
   useEffect(() => { fetchMatchDetails(); }, [matchId]);
-
-  useEffect(() => {
-    if (match && !aiSummary) {
-      fetchTacticalSummary();
-    }
-  }, [match]);
-
-  const fetchTacticalSummary = async () => {
-    if (!matchId) return;
-    setLoadingAI(true);
-    try {
-      // For global MatchDetail, we pass communityId as null or a special value if we don't have context
-      // The backend will handle empty chat messages
-      const res = await matchAPI.getTacticalSummary(matchId, null);
-      if (res.data.success) {
-        setAiSummary(res.data.summary);
-      }
-    } catch (err) {
-      console.error('Tactical summary error:', err);
-    } finally {
-      setLoadingAI(false);
-    }
-  };
 
   const fetchMatchDetails = async () => {
     setLoading(true); setError('');
@@ -54,10 +29,7 @@ const MatchDetail = () => {
     return new Date(utcDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  const formatTime = (utcDate) => {
-    if (!utcDate) return '';
-    return new Date(utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+
 
   const getStatusLabel = (status) => {
     const map = { SCHEDULED: 'Scheduled', TIMED: 'Upcoming', IN_PLAY: 'LIVE', PAUSED: 'Half Time', FINISHED: 'Full Time', SUSPENDED: 'Suspended', POSTPONED: 'Postponed', CANCELLED: 'Cancelled', AWARDED: 'Awarded' };
@@ -187,42 +159,6 @@ const MatchDetail = () => {
               </div>
             </div>
 
-            {/* Tactical Insight Card */}
-            {(isLive || match.status === 'FINISHED') && (
-              <div className="neu-card bg-black text-white p-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10"><Sparkles size={120} /></div>
-                <div className="relative z-10">
-                  <h3 className="font-bebas text-3xl mb-4 flex items-center gap-2 text-yellow-400">
-                    <Sparkles size={24} /> AI TACTICAL INSIGHT
-                  </h3>
-                  
-                  {loadingAI ? (
-                    <div className="flex items-center gap-3 py-4 text-gray-400 animate-pulse">
-                      <RefreshCw size={20} className="animate-spin" />
-                      <span className="font-archivo uppercase text-xl">Analyzing Match Data...</span>
-                    </div>
-                  ) : aiSummary ? (
-                    <div className="space-y-6">
-                      <div className="border-l-4 border-yellow-400 pl-6">
-                        <p className="font-archivo text-sm text-yellow-400 uppercase mb-2 tracking-widest">Manager's Tactical Report</p>
-                        <p className="font-inter text-xl leading-relaxed italic text-gray-100 font-bold">
-                          "{aiSummary.tactical_analysis}"
-                        </p>
-                      </div>
-                      
-                      {aiSummary.fan_sentiment && (
-                        <div className="bg-white/5 p-4 border border-white/10 rounded-sm">
-                          <p className="font-archivo text-xs text-gray-400 uppercase mb-1">Community Pulse</p>
-                          <p className="font-inter text-sm text-gray-300">{aiSummary.fan_sentiment}</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 font-inter">Tactical analysis will be available once the match reaches key milestones.</p>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Goals */}
             {match.goals?.length > 0 && (

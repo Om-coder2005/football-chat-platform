@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { authAPI } from '../services/api';
 
 export const AuthContext = createContext();
 
@@ -24,38 +24,20 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email,
-        password,
-      });
+    const response = await authAPI.login({ email, password });
+    const { tokens, user: userData } = response.data;
 
-      const { tokens, user: userData } = response.data;
-      
-      // Save tokens and user info
-      localStorage.setItem('access_token', tokens.access_token);
-      localStorage.setItem('refresh_token', tokens.refresh_token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      setUser(userData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    localStorage.setItem('access_token', tokens.access_token);
+    localStorage.setItem('refresh_token', tokens.refresh_token);
+    localStorage.setItem('user', JSON.stringify(userData));
+
+    setUser(userData);
+    return response.data;
   };
 
   const register = async (username, email, password, favorite_club) => {
-    try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
-        username,
-        email,
-        password,
-        favorite_club,
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await authAPI.register({ username, email, password, favorite_club });
+    return response.data;
   };
 
   const logout = () => {

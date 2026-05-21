@@ -105,24 +105,6 @@ class MatchController:
             }), 500
     
     @staticmethod
-    def get_competitions():
-        """
-        Get all available competitions/leagues
-        """
-        try:
-            data = MatchService.get_competitions()
-            return jsonify({
-                'success': True,
-                'count': data.get('count', 0),
-                'competitions': data.get('competitions', [])
-            }), 200
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': str(e)
-            }), 500
-    
-    @staticmethod
     def get_competition_matches(competition_id):
         """
         Get matches for a specific competition
@@ -195,7 +177,6 @@ class MatchController:
         Get today's matches for a team identified by club name.
         Falls back to the closest recent/upcoming match if none today.
         Query params: teamName (required) - the club name from the community
-        @returns HTTP response with matches data and source indicator
         """
         try:
             team_name = request.args.get('teamName')
@@ -206,25 +187,19 @@ class MatchController:
                 }), 400
 
             data = MatchService.get_matches_for_team(team_name)
-            
-            # Enrich matches with goals, stats, and lineups
-            from src.services.ai_stats_service import AIStatsService
-            enriched_matches = []
-            for match in data.get('matches', []):
-                if match.get('id'):
-                    try:
-                        # Use match details to get full stats/lineups
-                        full_match = MatchService.get_match_by_id(match['id'], enrich=True)
-                        enriched_matches.append(full_match)
-                    except:
-                        enriched_matches.append(match)
-                else:
-                    enriched_matches.append(match)
-            
+
+            # Enrich only the first match (get_matches_for_team always returns 1)
+            matches = data.get('matches', [])
+            if matches and matches[0].get('id'):
+                try:
+                    matches[0] = MatchService.get_match_by_id(matches[0]['id'], enrich=True)
+                except Exception:
+                    pass  # Keep the original match data on failure
+
             return jsonify({
                 'success': True,
-                'count': len(enriched_matches),
-                'matches': enriched_matches,
+                'count': len(matches),
+                'matches': matches,
                 'source': data.get('source', 'none'),
                 'message': data.get('message', '')
             }), 200
@@ -233,37 +208,3 @@ class MatchController:
                 'success': False,
                 'message': str(e)
             }), 500
-    @staticmethod
-    def get_tactical_summary(match_id):
-        """
-        Generate a tactical AI summary combining match data and fan chat.
-        Query params: communityId (required)
-        """
-        try:
-            from src.services.ai_stats_service import AIStatsService
-            from src.services.message_service import MessageService
-            from src.db.connection import db_session
-            
-            community_id = request.args.get('communityId')
-            if not community_id:
-                return jsonify({'success': False, 'message': 'communityId is required'}), 400
-                
-            # 1. Fetch match data
-            match_data = MatchService.get_match_by_id(match_id, enrich=True)
-            
-            # 2. Fetch recent chat messages (last 20)
-            with db_session() as db:
-                messages = MessageService.get_community_messages(db, int(community_id), limit=20)
-                
-            # 3. Generate AI summary
-            summary = AIStatsService.generate_tactical_summary(match_data, messages)
-            
-            if not summary:
-                return jsonify({'success': False, 'message': 'Failed to generate summary'}), 500
-                
-            return jsonify({
-                'success': True,
-                'summary': summary
-            }), 200
-        except Exception as e:
-            return jsonify({'success': False, 'message': str(e)}), 500

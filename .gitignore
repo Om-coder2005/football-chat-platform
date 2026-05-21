@@ -1,52 +1,107 @@
+# ========================
 # Python
+# ========================
 __pycache__/
+*.py[cod]
+*$py.class
+*.pyo
 venv/
-*.pyc
+.venv/
+env/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Node
-node_modules/
-frontend/node_modules/
-
-# OS
-.DS_Store
-Thumbs.db
+# ========================
 # Backend
+# ========================
 backend/venv/
+backend/.venv/
 backend/__pycache__/
 backend/**/__pycache__/
 backend/**/*.pyc
 backend/.env
+backend/.env.*
 backend/*.db
+backend/*.sqlite3
 backend/football_chat.db
 backend/instance/
 
-# Frontend
+# ========================
+# Node / Frontend
+# ========================
+node_modules/
 frontend/node_modules/
 frontend/dist/
+frontend/dist-ssr/
 frontend/.env
 frontend/.env.local
+frontend/.env.*.local
 
-# IDE
+# ========================
+# Environment & Secrets
+# ========================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ========================
+# IDE & Editors
+# ========================
 .vscode/
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
+*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sublime-project
+*.sublime-workspace
 
-# OS
+# ========================
+# OS Generated
+# ========================
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
+# ========================
 # Logs
+# ========================
 *.log
+logs/
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Development notes
+# ========================
+# Development Artifacts
+# ========================
 backend-progress.md
 structure.txt
 
-# Temporary
+# ========================
+# Temporary Files
+# ========================
 *.tmp
 *.temp
+*.bak
+*.orig
 
-# Batch files
+# ========================
+# Batch / Shell Scripts
+# ========================
 *.bat
+*.sh
+
+# ========================
+# Root lock file (not a real project)
+# ========================
+/package-lock.json

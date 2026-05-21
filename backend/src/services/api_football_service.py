@@ -3,9 +3,6 @@ import os
 import logging
 import time
 import json
-from dotenv import load_dotenv
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 

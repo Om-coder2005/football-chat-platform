@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState, useRef, useCallback } from 'rea
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import { matchAPI } from '../services/api';
+import { formatTime, formatDateParam } from '../utils/formatters';
 import {
   Home, Users, Activity, User, Settings, LogOut,
   ChevronLeft, ChevronRight
@@ -9,17 +10,6 @@ import {
 
 const MATCH_REFRESH_INTERVAL = 60_000;
 const MATCH_CYCLE_INTERVAL   = 8_000;
-
-const fmt = (date) => {
-  try {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  } catch (e) {
-    return '';
-  }
-};
 
 const getMatchMinute = (match) => {
   if (!match) return null;
@@ -33,15 +23,6 @@ const getMatchMinute = (match) => {
     return `${el}'`;
   } catch (e) {
     return 'LIVE';
-  }
-};
-
-const fmtTime = (utcDate) => {
-  if (!utcDate) return '';
-  try {
-    return new Date(utcDate).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-  } catch (e) {
-    return '';
   }
 };
 
@@ -121,14 +102,14 @@ const AppHeader = () => {
       const prev = new Date(now); prev.setDate(now.getDate() - 1);
       const next = new Date(now); next.setDate(now.getDate() + 1);
       
-      const dateFrom = fmt(prev);
-      const dateTo = fmt(next);
+      const dateFrom = formatDateParam(prev);
+      const dateTo = formatDateParam(next);
       
       if (!dateFrom || !dateTo) return;
       
       const res  = await matchAPI.getMatchesByDate(dateFrom, dateTo);
       if (res && res.data && res.data.matches) {
-        const todayStr = fmt(now);
+        const todayStr = formatDateParam(now);
         const scored = res.data.matches.map(m => {
           const day = (m.utcDate || '').slice(0, 10);
           const live = m.status === 'IN_PLAY' || m.status === 'PAUSED';
@@ -197,7 +178,7 @@ const AppHeader = () => {
           {active.homeTeam?.tla || active.homeTeam?.shortName || ''}
         </span>
         <span style={{fontFamily:'"Bebas Neue",sans-serif',fontSize:'1.25rem',background:'var(--accent-secondary)',color:'var(--bg-primary)',padding:'0 0.5rem',letterSpacing:'0.05em',border:'1px solid var(--border-color)'}}>
-          {hasScore ? `${hs}-${as}` : (fmtTime(active.utcDate) || 'VS')}
+          {hasScore ? `${hs}-${as}` : (formatTime(active.utcDate) || 'VS')}
           {min && <span style={{color:'var(--accent-primary)',fontSize:'0.7rem',marginLeft:'3px'}}>{min}</span>}
         </span>
         <span style={{display:'flex',alignItems:'center',gap:'0.3rem',fontFamily:'"Archivo Black",sans-serif',fontSize:'0.8rem',textTransform:'uppercase'}}>

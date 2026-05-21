@@ -77,7 +77,6 @@ export const matchAPI = {
     api.get('/matches', { params: { dateFrom, dateTo } }),
   getMatchDetails: (matchId) => api.get(`/matches/${matchId}`),
   getAvailableCompetitions: () => api.get('/competitions/available'),
-  getCompetitions: () => api.get('/competitions'),
   getCompetitionMatches: (competitionId, params = {}) => 
     api.get(`/competitions/${competitionId}/matches`, { params }),
   getCompetitionStandings: (competitionId) => 
@@ -86,8 +85,6 @@ export const matchAPI = {
     api.get(`/teams/${teamId}/matches`, { params }),
   getTeamMatchesByName: (teamName) =>
     api.get('/matches/team', { params: { teamName } }),
-  getTacticalSummary: (matchId, communityId) =>
-    api.get(`/matches/${matchId}/tactical-summary`, { params: { communityId } }),
 };
 
 export default api;

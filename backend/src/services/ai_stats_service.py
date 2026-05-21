@@ -4,9 +4,7 @@ import logging
 import hashlib
 import time
 from datetime import datetime
-from dotenv import load_dotenv
-
-load_dotenv()
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -272,63 +270,91 @@ class AIStatsService:
                 t["name"] = home_name if t.get("id") == home_id else away_name
                 event["team"] = t
 
-        # ── STEP 1: Fill missing goals via Gemini ─────────────────────────
+        # ── STEPS 1 & 3: Run Gemini scorers and stats in parallel ──────
         native_goals = match_data.get("goals", [])
         total_goals  = sh + sa
 
-        if not native_goals and total_goals > 0 and home_short and away_short:
-            scorer_data = AIStatsService.get_goal_scorers(
-                home_short, away_short, match_date, sh, sa
-            )
-            if scorer_data:
-                goals_out = []
-                for g in scorer_data.get("goals", []):
-                    side = g.get("team", "home")
-                    goals_out.append({
-                        "minute":  g.get("minute", 0),
-                        "scorer":  {"name": g.get("scorer", "Unknown")},
-                        "assist":  {"name": g.get("assist")} if g.get("assist") else None,
-                        "team":    {
-                            "id":   home_id if side == "home" else away_id,
-                            "name": home_name if side == "home" else away_name,
-                        },
-                        "type": g.get("type", "REGULAR"),
-                    })
-                if goals_out:
-                    match_data["goals"] = goals_out
+        need_scorers = not native_goals and total_goals > 0 and home_short and away_short
+        need_stats   = not match_data.get("homeTeam", {}).get("statistics")
 
-                bookings_out = []
-                for b in scorer_data.get("bookings", []):
-                    side = b.get("team", "home")
-                    bookings_out.append({
-                        "minute": b.get("minute", 0),
-                        "player": {"name": b.get("player", "Unknown")},
-                        "team":   {
-                            "id":   home_id if side == "home" else away_id,
-                            "name": home_name if side == "home" else away_name,
-                        },
-                        "card": b.get("card", "YELLOW"),
-                    })
-                if bookings_out and not match_data.get("bookings"):
-                    match_data["bookings"] = bookings_out
+        scorer_data = None
+        ai_stats    = None
 
-                lineups = scorer_data.get("lineups", {})
-                for side, team_key in (("home", "homeTeam"), ("away", "awayTeam")):
-                    ld   = lineups.get(side, {})
-                    team = match_data.setdefault(team_key, {})
-                    if not team.get("lineup") and ld.get("players"):
-                        team["lineup"] = [
-                            {"name": p.get("name",""), "shirtNumber": p.get("number"),
-                             "position": p.get("position","")}
-                            for p in ld["players"]
-                        ]
-                    if not team.get("formation") and ld.get("formation"):
-                        team["formation"] = ld["formation"]
+        if need_scorers or need_stats:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                scorer_future = (
+                    pool.submit(AIStatsService.get_goal_scorers,
+                                home_short, away_short, match_date, sh, sa)
+                    if need_scorers else None
+                )
+                stats_future = (
+                    pool.submit(AIStatsService.get_match_stats,
+                                home_short, away_short, match_date, sh, sa)
+                    if need_stats else None
+                )
 
-                match_data["_ai_enriched"] = True
-                match_data["_ai_source"]   = "gemini_scorers"
+                if scorer_future:
+                    try:
+                        scorer_data = scorer_future.result(timeout=15)
+                    except Exception as e:
+                        logger.error("Gemini scorers fetch failed: %s", e)
 
-        # ── STEP 2: API-Football for lineups ──────────────────────────────
+                if stats_future:
+                    try:
+                        ai_stats = stats_future.result(timeout=15)
+                    except Exception as e:
+                        logger.error("Gemini stats fetch failed: %s", e)
+
+        # Process scorer results (Step 1)
+        if scorer_data:
+            goals_out = []
+            for g in scorer_data.get("goals", []):
+                side = g.get("team", "home")
+                goals_out.append({
+                    "minute":  g.get("minute", 0),
+                    "scorer":  {"name": g.get("scorer", "Unknown")},
+                    "assist":  {"name": g.get("assist")} if g.get("assist") else None,
+                    "team":    {
+                        "id":   home_id if side == "home" else away_id,
+                        "name": home_name if side == "home" else away_name,
+                    },
+                    "type": g.get("type", "REGULAR"),
+                })
+            if goals_out:
+                match_data["goals"] = goals_out
+
+            bookings_out = []
+            for b in scorer_data.get("bookings", []):
+                side = b.get("team", "home")
+                bookings_out.append({
+                    "minute": b.get("minute", 0),
+                    "player": {"name": b.get("player", "Unknown")},
+                    "team":   {
+                        "id":   home_id if side == "home" else away_id,
+                        "name": home_name if side == "home" else away_name,
+                    },
+                    "card": b.get("card", "YELLOW"),
+                })
+            if bookings_out and not match_data.get("bookings"):
+                match_data["bookings"] = bookings_out
+
+            lineups = scorer_data.get("lineups", {})
+            for side, team_key in (("home", "homeTeam"), ("away", "awayTeam")):
+                ld   = lineups.get(side, {})
+                team = match_data.setdefault(team_key, {})
+                if not team.get("lineup") and ld.get("players"):
+                    team["lineup"] = [
+                        {"name": p.get("name",""), "shirtNumber": p.get("number"),
+                         "position": p.get("position","")}
+                        for p in ld["players"]
+                    ]
+                if not team.get("formation") and ld.get("formation"):
+                    team["formation"] = ld["formation"]
+
+            match_data["_ai_enriched"] = True
+            match_data["_ai_source"]   = "gemini_scorers"
+
+        # ── STEP 2: API-Football for lineups ──────────────────────
         has_lineups = (
             match_data.get("homeTeam", {}).get("lineup") or
             match_data.get("awayTeam", {}).get("lineup")
@@ -357,21 +383,16 @@ class AIStatsService:
             except Exception as e:
                 logger.error("API-Football lineup fetch failed: %s", e)
 
-        # ── STEP 3: Gemini for possession / shots stats ───────────────────
-        if not match_data.get("homeTeam", {}).get("statistics"):
-            try:
-                ai_s = AIStatsService.get_match_stats(home_short, away_short, match_date, sh, sa)
-                if ai_s:
-                    raw_s  = ai_s.get("statistics", {})
-                    home_s, away_s = {}, {}
-                    for key, val in raw_s.items():
-                        if isinstance(val, dict):
-                            home_s[key] = val.get("home", 0)
-                            away_s[key] = val.get("away", 0)
-                    match_data.setdefault("homeTeam", {})["statistics"] = home_s
-                    match_data.setdefault("awayTeam", {})["statistics"] = away_s
-            except Exception as e:
-                logger.error("Gemini stats fetch failed: %s", e)
+        # Process stats results (Step 3)
+        if ai_stats:
+            raw_s  = ai_stats.get("statistics", {})
+            home_s, away_s = {}, {}
+            for key, val in raw_s.items():
+                if isinstance(val, dict):
+                    home_s[key] = val.get("home", 0)
+                    away_s[key] = val.get("away", 0)
+            match_data.setdefault("homeTeam", {})["statistics"] = home_s
+            match_data.setdefault("awayTeam", {})["statistics"] = away_s
 
         return match_data
 
