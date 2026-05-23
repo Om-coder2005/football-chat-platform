@@ -26,63 +26,10 @@ const getMatchMinute = (match) => {
   }
 };
 
-const S = {
-  header: {
-    position: 'sticky', top: 0, zIndex: 50,
-    background: 'var(--bg-primary)',
-    borderBottom: '4px solid var(--border-color)',
-    boxShadow: '0 4px 0 var(--shadow-color)',
-    padding: '0.6rem 1.25rem',
-    display: 'flex', flexWrap: 'wrap', alignItems: 'center',
-    justifyContent: 'space-between', gap: '0.6rem',
-  },
-  logo: {
-    fontFamily: '"Bebas Neue", sans-serif',
-    fontSize: '2.25rem', letterSpacing: '0.08em',
-    color: 'var(--text-primary)', textDecoration: 'none',
-    lineHeight: 1,
-  },
-  navLink: {
-    fontFamily: '"Archivo Black", sans-serif',
-    fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em',
-    padding: '0.35rem 0.7rem', textDecoration: 'none',
-    color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.3rem',
-    border: '2px solid transparent', transition: 'all 0.15s',
-  },
-  actionBtn: {
-    fontFamily: '"Archivo Black", sans-serif',
-    fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em',
-    padding: '0.35rem 0.9rem',
-    background: 'var(--accent-primary)', color: 'var(--text-on-accent)',
-    border: '2px solid var(--border-color)',
-    boxShadow: '2px 2px 0 var(--shadow-color)', cursor: 'pointer',
-    display: 'flex', alignItems: 'center', gap: '0.3rem',
-    textDecoration: 'none', transition: 'transform 0.1s',
-  },
-  iconBtn: {
-    fontFamily: '"Archivo Black", sans-serif',
-    fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.04em',
-    padding: '0.35rem 0.7rem',
-    background: 'var(--card-bg)', color: 'var(--text-primary)',
-    border: '2px solid var(--border-color)',
-    boxShadow: '2px 2px 0 var(--shadow-color)', cursor: 'pointer',
-    display: 'flex', alignItems: 'center', gap: '0.3rem',
-    textDecoration: 'none', transition: 'transform 0.1s',
-  },
-};
-
 const NavLink = ({ to, children }) => (
-  <Link to={to} style={S.navLink}
-    onMouseEnter={e => { 
-      e.currentTarget.style.background='var(--accent-primary)'; 
-      e.currentTarget.style.color='var(--text-on-accent)'; 
-      e.currentTarget.style.borderColor='var(--border-color)'; 
-    }}
-    onMouseLeave={e => { 
-      e.currentTarget.style.background='transparent'; 
-      e.currentTarget.style.color='var(--text-primary)'; 
-      e.currentTarget.style.borderColor='transparent'; 
-    }}
+  <Link 
+    to={to} 
+    className="font-archivo text-sm uppercase tracking-wider px-3 py-2 flex items-center gap-2 border-4 border-transparent text-black transition-all duration-200 hover:border-black hover:bg-[var(--accent-primary)] hover:text-white hover:translate-y-[-2px] hover:shadow-[4px_4px_0_0_#000]"
   >
     {children}
   </Link>
@@ -152,7 +99,7 @@ const AppHeader = () => {
     setActiveIndex(p => (p - 1 + matches.length) % matches.length); 
   };
 
-  const active = matches[activeIndex] || null;
+  const active = matches.at(activeIndex) || null;
 
   const renderTicker = () => {
     if (!active) return null;
@@ -164,30 +111,40 @@ const AppHeader = () => {
     const min = getMatchMinute(active);
 
     return (
-      <Link to={`/match/${active.id}`} style={{ display:'flex', alignItems:'center', gap:'0.4rem', border:'3px solid var(--border-color)', boxShadow:'4px 4px 0 var(--shadow-color)', padding:'0.3rem 0.6rem', background:'var(--card-bg)', textDecoration:'none', color:'var(--text-primary)' }}>
+      <Link 
+        to={`/match/${active.id}`} 
+        className="flex items-center gap-2 border-4 border-black shadow-[4px_4px_0_0_#000] px-3 py-1 bg-white text-black no-underline transition-all duration-200 hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000]"
+      >
         {matches.length > 1 && (
-          <button onClick={e=>{e.preventDefault();e.stopPropagation();goPrev();}} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-primary)',display:'flex',alignItems:'center',padding:'0 2px'}}>
-            <ChevronLeft size={14} />
+          <button onClick={e=>{e.preventDefault();e.stopPropagation();goPrev();}} className="bg-transparent border-none cursor-pointer text-black flex items-center px-1 hover:text-[var(--accent-primary)] transition-colors">
+            <ChevronLeft size={16} />
           </button>
         )}
+        
         {isLive && (
-          <span style={{background:'#ef4444',color:'#fff',fontFamily:'"Archivo Black",sans-serif',fontSize:'0.6rem',padding:'1px 5px',border:'1px solid var(--border-color)'}}>LIVE</span>
+          <span className="animate-score-pulse bg-red-500 text-white font-archivo text-[10px] px-2 py-0.5 border-2 border-black uppercase">
+            {'LIVE'}
+          </span>
         )}
-        <span style={{display:'flex',alignItems:'center',gap:'0.3rem',fontFamily:'"Archivo Black",sans-serif',fontSize:'0.8rem',textTransform:'uppercase'}}>
-          {active.homeTeam?.crest && <img src={active.homeTeam.crest} alt="" style={{width:18,height:18,objectFit:'contain'}} />}
+        
+        <span className="flex items-center gap-2 font-archivo text-sm uppercase">
+          {active.homeTeam?.crest && <img src={active.homeTeam.crest} alt="" className="w-5 h-5 object-contain" />}
           {active.homeTeam?.tla || active.homeTeam?.shortName || ''}
         </span>
-        <span style={{fontFamily:'"Bebas Neue",sans-serif',fontSize:'1.25rem',background:'var(--accent-secondary)',color:'var(--bg-primary)',padding:'0 0.5rem',letterSpacing:'0.05em',border:'1px solid var(--border-color)'}}>
+        
+        <span className="font-bebas text-xl bg-black text-white px-2 tracking-wider border-2 border-black flex items-center">
           {hasScore ? `${hs}-${as}` : (formatTime(active.utcDate) || 'VS')}
-          {min && <span style={{color:'var(--accent-primary)',fontSize:'0.7rem',marginLeft:'3px'}}>{min}</span>}
+          {min && <span className="text-[var(--accent-primary)] text-sm ml-1">{min}</span>}
         </span>
-        <span style={{display:'flex',alignItems:'center',gap:'0.3rem',fontFamily:'"Archivo Black",sans-serif',fontSize:'0.8rem',textTransform:'uppercase'}}>
+        
+        <span className="flex items-center gap-2 font-archivo text-sm uppercase">
           {active.awayTeam?.tla || active.awayTeam?.shortName || ''}
-          {active.awayTeam?.crest && <img src={active.awayTeam.crest} alt="" style={{width:18,height:18,objectFit:'contain'}} />}
+          {active.awayTeam?.crest && <img src={active.awayTeam.crest} alt="" className="w-5 h-5 object-contain" />}
         </span>
+        
         {matches.length > 1 && (
-          <button onClick={e=>{e.preventDefault();e.stopPropagation();goNext();}} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-primary)',display:'flex',alignItems:'center',padding:'0 2px'}}>
-            <ChevronRight size={14} />
+          <button onClick={e=>{e.preventDefault();e.stopPropagation();goNext();}} className="bg-transparent border-none cursor-pointer text-black flex items-center px-1 hover:text-[var(--accent-primary)] transition-colors">
+            <ChevronRight size={16} />
           </button>
         )}
       </Link>
@@ -195,29 +152,43 @@ const AppHeader = () => {
   };
 
   return (
-    <header style={S.header}>
-      <Link to="/" style={S.logo}>CASA ULTRAS</Link>
+    <header className="sticky top-0 z-50 bg-[var(--bg-primary)] border-b-4 border-black shadow-[0_6px_0_0_#000] px-4 py-3 md:px-8 md:py-4 flex flex-wrap items-center justify-between gap-4">
+      
+      {/* Logo */}
+      <Link to="/" className="font-bebas text-4xl tracking-widest text-black no-underline leading-none">
+        {'CASA ULTRAS'}
+      </Link>
 
-      <div style={{flex:1,display:'flex',justifyContent:'center',minWidth:0}}>
+      {/* Ticker - Centered or forced full width on mobile */}
+      <div className="w-full lg:w-auto flex flex-1 justify-center order-3 lg:order-2">
         {renderTicker()}
       </div>
 
-      <nav style={{display:'flex',alignItems:'center',gap:'0.4rem',flexWrap:'wrap'}}>
-        <NavLink to="/"><Home size={14} /> Home</NavLink>
-        <NavLink to="/communities"><Users size={14} /> Communities</NavLink>
-        <NavLink to="/live-scores"><Activity size={14} /> Scores</NavLink>
+      {/* Navigation */}
+      <nav className="flex items-center gap-2 flex-wrap justify-end order-2 lg:order-3">
+        <NavLink to="/"><Home size={16} /> Home</NavLink>
+        <NavLink to="/communities"><Users size={16} /> Communities</NavLink>
+        <NavLink to="/live-scores"><Activity size={16} /> Scores</NavLink>
+        
         {user ? (
           <>
-            <Link to="/profile"  style={S.iconBtn}><User size={14} /> Profile</Link>
-            <Link to="/settings" style={S.iconBtn}><Settings size={14} /> Settings</Link>
-            <button style={{ ...S.actionBtn, background:'#ef4444', color:'#fff' }} onClick={() => { if (logout) logout(); navigate('/'); }}>
-              <LogOut size={14} /> Logout
+            <Link to="/profile" className="font-archivo text-sm uppercase tracking-wider px-3 py-2 flex items-center gap-2 border-4 border-black bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] transition-all">
+              <User size={16} /> Profile
+            </Link>
+            <Link to="/settings" className="font-archivo text-sm uppercase tracking-wider px-3 py-2 flex items-center gap-2 border-4 border-black bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] transition-all">
+              <Settings size={16} /> Settings
+            </Link>
+            <button onClick={() => { if (logout) logout(); navigate('/'); }} className="font-archivo text-sm uppercase tracking-wider px-3 py-2 flex items-center gap-2 border-4 border-black bg-red-500 text-white shadow-[4px_4px_0_0_#000] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] transition-all cursor-pointer">
+              <LogOut size={16} /> Logout
             </button>
           </>
         ) : (
-          <Link to="/login" style={S.actionBtn}>Login</Link>
+          <Link to="/login" className="font-archivo text-sm uppercase tracking-wider px-4 py-2 flex items-center gap-2 border-4 border-black bg-[var(--accent-primary)] text-white shadow-[4px_4px_0_0_#000] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] transition-all">
+            {'Login'}
+          </Link>
         )}
       </nav>
+      
     </header>
   );
 };

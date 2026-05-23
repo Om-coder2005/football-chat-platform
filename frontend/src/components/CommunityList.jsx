@@ -79,8 +79,8 @@ const CommunityList = () => {
         <div className="mb-16 border-b-4 border-black pb-8 flex flex-wrap justify-between items-end gap-6 relative overflow-hidden">
           <div className="comic-sticker-abs top-0 right-4 rotate-[-6deg] hidden md:block">SELECT YOUR FIRM</div>
           <div className="max-w-2xl">
-            <h1 className="neu-heading text-7xl md:text-[100px] mb-4">CHOOSE YOUR STAND</h1>
-            <p className="font-inter font-bold text-xl bg-yellow-300 inline-block px-4 py-2 border-2 border-black rotate-1 shadow-[4px_4px_0px_0px_#000]">
+            <h1 className="neu-heading text-7xl md:text-[110px] mb-6">CHOOSE YOUR STAND</h1>
+            <p className="font-poppins font-bold text-2xl bg-yellow-300 inline-block px-5 py-3 border-4 border-black rotate-2 shadow-[6px_6px_0px_0px_#000]">
               Join the firm. Support your local.
             </p>
           </div>
@@ -104,9 +104,9 @@ const CommunityList = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {myCommunities.length === 0 ? (
-              <div className="neu-card col-span-full bg-white/50 border-dashed border-4 flex flex-col items-center justify-center py-16 text-center">
-                <p className="font-archivo text-2xl mb-4 text-gray-400">NO COMMUNITIES JOINED YET</p>
-                <p className="font-inter font-bold text-gray-500">Pick a stand from the list below to start chatting!</p>
+              <div className="neu-card col-span-full bg-white/50 border-dashed border-4 flex flex-col items-center justify-center py-20 text-center shadow-[8px_8px_0px_0px_#000]">
+                <p className="font-archivo text-3xl mb-4 text-gray-500">NO COMMUNITIES JOINED YET</p>
+                <p className="font-poppins font-bold text-gray-600 text-lg">Pick a stand from the list below to start chatting!</p>
               </div>
             ) : myCommunities.map((c, i) => (
               <div 
@@ -121,17 +121,17 @@ const CommunityList = () => {
                   <div className="flex justify-between items-start mb-4">
                     <span className="comic-sticker bg-white text-black text-sm">MEMBER</span>
                   </div>
-                  <h3 className="font-archivo text-3xl uppercase text-black mb-1 leading-tight group-hover:underline decoration-4">
+                  <h3 className="font-archivo text-4xl uppercase text-black mb-2 leading-tight group-hover:underline decoration-4">
                     {c.name}
                   </h3>
-                  <p className="font-inter font-extrabold text-black/60 uppercase tracking-tighter">
+                  <p className="font-poppins font-extrabold text-black/70 text-lg uppercase tracking-tighter">
                     {c.club_name || 'General'}
                   </p>
                 </div>
                 
-                <div className="mt-8 flex justify-between items-center">
-                  <div className="flex items-center gap-2 font-archivo bg-white border-2 border-black px-3 py-1 shadow-[3px_3px_0px_0px_#000]">
-                    <Users size={16} /> {c.member_count}
+                <div className="mt-10 flex justify-between items-center">
+                  <div className="flex items-center gap-2 font-poppins font-bold bg-white border-4 border-black px-4 py-2 shadow-[4px_4px_0px_0px_#000]">
+                    <Users size={20} /> {c.member_count}
                   </div>
                   <button 
                     className="neu-button bg-black text-white py-2 px-6 group-hover:translate-x-1" 
@@ -159,11 +159,11 @@ const CommunityList = () => {
             {communities.map((c, i) => (
               <div key={c.id} className="neu-card bg-white flex flex-col justify-between min-h-[250px]">
                 <div>
-                  <h3 className="font-archivo text-2xl uppercase mb-1 leading-tight">{c.name}</h3>
-                  <p className="font-inter font-bold text-gray-500 uppercase text-xs mb-3 tracking-widest">
+                  <h3 className="font-archivo text-3xl uppercase mb-2 leading-tight">{c.name}</h3>
+                  <p className="font-poppins font-bold text-gray-500 uppercase text-sm mb-4 tracking-widest">
                     {c.club_name || 'General Discussion'}
                   </p>
-                  <p className="font-inter text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                  <p className="font-poppins text-base text-gray-600 line-clamp-3 leading-relaxed font-medium">
                     {c.description}
                   </p>
                 </div>

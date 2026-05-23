@@ -251,10 +251,54 @@
 
 @media (max-width:1100px) {
   .chat-room-layout { grid-template-columns: 80px 1fr 0px; }
-  .chat-sidebar-right { display: none; }
+  .chat-sidebar-right { 
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 320px;
+    z-index: 50;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-left: 4px solid var(--border-color);
+  }
+  .chat-sidebar-right.mobile-visible {
+    transform: translateX(0);
+  }
 }
 
 @media (max-width:768px) {
-  .chat-room-layout { grid-template-columns: 0px 1fr 0px; }
-  .chat-sidebar-left { display: none; }
+  .chat-room-layout { 
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-sidebar-left { 
+    flex-direction: row;
+    height: 60px;
+    width: 100%;
+    padding: 0 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: none;
+    border-bottom: 4px solid var(--border-color);
+  }
+  .channels-list {
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .channel-item, .add-channel-btn {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+  .channel-logo-text { font-size: 1rem; }
+  .sidebar-header {
+    border-bottom: none;
+    border-right: 3px solid rgba(255,255,255,0.1);
+    padding-bottom: 0;
+    padding-right: 1rem;
+    width: auto;
+    flex-direction: row;
+  }
 }

@@ -38,10 +38,10 @@ const Register = () => {
           </div>
 
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <h2 style={{ fontFamily: '"Archivo Black", sans-serif', fontSize: '2.5rem', marginBottom: '0.5rem', textTransform: 'uppercase', lineHeight: 1 }}>
+            <h2 style={{ fontFamily: 'var(--font-bebas)', fontSize: '3.5rem', marginBottom: '0.5rem', textTransform: 'uppercase', lineHeight: 1 }}>
               GET YOUR COLORS
             </h2>
-            <p style={{ fontFamily: '"Inter", sans-serif', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            <p style={{ fontFamily: 'var(--font-poppins)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-secondary)' }}>
               Join thousands of fans in the digital stands
             </p>
           </div>
@@ -54,8 +54,8 @@ const Register = () => {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontFamily: '"Archivo Black", sans-serif', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <User size={12} /> Username
+              <label style={{ fontFamily: 'var(--font-archivo)', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <User size={16} /> Username
               </label>
               <input 
                 id="reg-username" 
@@ -65,12 +65,13 @@ const Register = () => {
                 placeholder="UltrasFan_01" 
                 required 
                 className="neu-input"
+                style={{ border: '4px solid var(--border-color)', boxShadow: '4px 4px 0 var(--shadow-color)' }}
               />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontFamily: '"Archivo Black", sans-serif', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Mail size={12} /> Email
+              <label style={{ fontFamily: 'var(--font-archivo)', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Mail size={16} /> Email
               </label>
               <input 
                 id="reg-email" 
@@ -80,12 +81,13 @@ const Register = () => {
                 placeholder="you@stadium.com" 
                 required 
                 className="neu-input"
+                style={{ border: '4px solid var(--border-color)', boxShadow: '4px 4px 0 var(--shadow-color)' }}
               />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontFamily: '"Archivo Black", sans-serif', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Trophy size={12} /> Favorite Club
+              <label style={{ fontFamily: 'var(--font-archivo)', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Trophy size={16} /> Favorite Club
               </label>
               <input 
                 id="reg-club" 
@@ -95,12 +97,13 @@ const Register = () => {
                 placeholder="e.g. Real Madrid" 
                 required 
                 className="neu-input"
+                style={{ border: '4px solid var(--border-color)', boxShadow: '4px 4px 0 var(--shadow-color)' }}
               />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontFamily: '"Archivo Black", sans-serif', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Lock size={12} /> Password
+              <label style={{ fontFamily: 'var(--font-archivo)', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Lock size={16} /> Password
               </label>
               <input 
                 id="reg-password" 
@@ -110,6 +113,7 @@ const Register = () => {
                 placeholder="Min. 8 chars, Upper, Lower, Num" 
                 required 
                 className="neu-input"
+                style={{ border: '4px solid var(--border-color)', boxShadow: '4px 4px 0 var(--shadow-color)' }}
               />
             </div>
 
@@ -117,20 +121,20 @@ const Register = () => {
               type="submit" 
               disabled={loading} 
               className="neu-button" 
-              style={{ marginTop: '0.5rem', background: '#10b981', color: '#000', fontSize: '1.25rem', padding: '1rem', width: '100%', justifyContent: 'center' }}
+              style={{ marginTop: '0.5rem', background: '#10b981', color: '#000', fontSize: '1.25rem', padding: '1rem', width: '100%', justifyContent: 'center', border: '4px solid var(--border-color)', boxShadow: '6px 6px 0 var(--shadow-color)' }}
             >
               {loading ? 'PROCESSING...' : (
                 <>
-                  <UserPlus size={20} style={{ marginRight: '8px' }} /> SIGN UP
+                  <UserPlus size={24} style={{ marginRight: '12px' }} /> SIGN UP
                 </>
               )}
             </button>
           </form>
 
-          <div style={{ marginTop: '2rem', textAlign: 'center', paddingTop: '1.5rem', borderTop: '2px dashed var(--border-color)' }}>
-            <p style={{ fontFamily: '"Inter", sans-serif', fontWeight: 700 }}>
+          <div style={{ marginTop: '2rem', textAlign: 'center', paddingTop: '1.5rem', borderTop: '4px dashed var(--border-color)' }}>
+            <p style={{ fontFamily: 'var(--font-poppins)', fontWeight: 700, fontSize: '1.1rem' }}>
               Already part of the firm?{' '}
-              <Link to="/login" style={{ color: '#10b981', textDecoration: 'underline', textDecorationThickness: '3px' }}>
+              <Link to="/login" style={{ color: '#10b981', textDecoration: 'underline', textDecorationThickness: '4px' }}>
                 Login here
               </Link>
             </p>

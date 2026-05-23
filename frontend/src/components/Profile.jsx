@@ -92,7 +92,7 @@ const Profile = () => {
         <div className="mb-12 border-b-4 border-black pb-8 relative overflow-hidden">
           <div className="comic-sticker top-0 right-4 rotate-[8deg] bg-blue-400 text-white text-xl px-4 py-2 hidden md:block">MY PROFILE</div>
           <h1 className="neu-heading text-7xl">FAN PROFILE</h1>
-          <p className="font-inter font-bold text-xl bg-yellow-300 inline-block px-4 py-2 border-2 border-black -rotate-1 shadow-[4px_4px_0px_0px_#000] mt-4">
+          <p className="font-poppins font-bold text-xl bg-yellow-300 inline-block px-4 py-2 border-4 border-black -rotate-1 shadow-[6px_6px_0px_0px_#000] mt-4">
             @{user?.username} — {user?.favorite_club || 'True Football Fan'}
           </p>
         </div>
@@ -129,25 +129,25 @@ const Profile = () => {
                 </div>
                 <div className="text-center">
                   <h2 className="font-archivo text-2xl uppercase">@{user?.username}</h2>
-                  <p className="font-inter font-bold text-gray-600 text-sm mb-3">{user?.email}</p>
+                  <p className="font-poppins font-bold text-gray-600 text-sm mb-3">{user?.email}</p>
                   {user?.favorite_club && (
-                    <div className="inline-block bg-yellow-300 border-2 border-black px-3 py-1 font-archivo text-sm uppercase shadow-[2px_2px_0px_0px_#000] rotate-1 mb-3">
+                    <div className="inline-block bg-yellow-300 border-4 border-black px-3 py-1 font-archivo text-sm uppercase shadow-[4px_4px_0px_0px_#000] rotate-1 mb-3">
                       ⚽ {user.favorite_club}
                     </div>
                   )}
                   {user?.bio && (
-                    <p className="font-inter font-bold text-gray-700 text-sm italic mb-4 bg-gray-100 border-2 border-black p-3 text-left shadow-[2px_2px_0px_0px_#000]">
+                    <p className="font-poppins font-bold text-gray-700 text-sm italic mb-4 bg-gray-100 border-4 border-black p-3 text-left shadow-[4px_4px_0px_0px_#000]">
                       "{user.bio}"
                     </p>
                   )}
                   <div className="border-t-4 border-black pt-4 mt-2 grid grid-cols-2 gap-4 text-center">
-                    <div className="bg-gray-100 border-2 border-black p-3 shadow-[2px_2px_0px_0px_#000]">
+                    <div className="bg-gray-100 border-4 border-black p-3 shadow-[4px_4px_0px_0px_#000]">
                       <p className="font-archivo text-3xl">{user?.communities?.length || 0}</p>
-                      <p className="font-inter font-bold text-xs uppercase">Communities</p>
+                      <p className="font-poppins font-bold text-xs uppercase">Communities</p>
                     </div>
-                    <div className="bg-green-300 border-2 border-black p-3 shadow-[2px_2px_0px_0px_#000]">
+                    <div className="bg-green-300 border-4 border-black p-3 shadow-[4px_4px_0px_0px_#000]">
                       <p className="font-archivo text-xl uppercase">Active</p>
-                      <p className="font-inter font-bold text-xs uppercase">Status</p>
+                      <p className="font-poppins font-bold text-xs uppercase">Status</p>
                     </div>
                   </div>
                 </div>
@@ -165,12 +165,12 @@ const Profile = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.08 }}
                       key={community.id}
-                      className="flex items-center justify-between p-3 bg-gray-100 border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_#000] transition-all cursor-pointer"
+                      className="flex items-center justify-between p-3 bg-gray-100 border-4 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_#000] transition-all cursor-pointer"
                       onClick={() => navigate(`/community/${community.id}`)}
                     >
                       <div>
                         <h4 className="font-archivo text-sm uppercase">{community.name}</h4>
-                        <p className="font-inter font-bold text-xs text-gray-500 capitalize">{community.role}</p>
+                        <p className="font-poppins font-bold text-xs text-gray-500 capitalize">{community.role}</p>
                       </div>
                       <span className="font-archivo text-sm">→</span>
                     </motion.div>
@@ -178,7 +178,7 @@ const Profile = () => {
                 </div>
               ) : (
                 <div className="text-center py-6">
-                  <p className="font-inter font-bold text-gray-600 mb-4">You haven't joined any communities yet.</p>
+                  <p className="font-poppins font-bold text-gray-600 mb-4">You haven't joined any communities yet.</p>
                   <button
                     onClick={() => navigate('/communities')}
                     className="neu-button bg-blue-500 text-white text-sm py-2 px-4"
@@ -196,12 +196,12 @@ const Profile = () => {
               <h2 className="font-archivo text-3xl uppercase mb-6 border-b-4 border-black pb-4">Update Your Kit</h2>
 
               {error && (
-                <div className="bg-red-500 text-white font-inter font-bold border-2 border-black p-3 mb-6 shadow-[2px_2px_0px_0px_#000]">
+                <div className="bg-red-500 text-white font-poppins font-bold border-4 border-black p-3 mb-6 shadow-[4px_4px_0px_0px_#000]">
                   ⚠️ {error}
                 </div>
               )}
               {success && (
-                <div className="bg-green-400 text-black font-inter font-bold border-2 border-black p-3 mb-6 shadow-[2px_2px_0px_0px_#000]">
+                <div className="bg-green-400 text-black font-poppins font-bold border-4 border-black p-3 mb-6 shadow-[4px_4px_0px_0px_#000]">
                   ✅ {success}
                 </div>
               )}
@@ -216,7 +216,7 @@ const Profile = () => {
                     placeholder="https://example.com/my-avatar.jpg"
                     className="neu-input"
                   />
-                  <p className="font-inter text-xs font-bold text-gray-500">Leave blank to use the default initials avatar.</p>
+                  <p className="font-poppins text-xs font-bold text-gray-500">Leave blank to use the default initials avatar.</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -240,11 +240,11 @@ const Profile = () => {
                     maxLength="150"
                     className="neu-input resize-none"
                   />
-                  <p className="font-inter font-bold text-xs text-right text-gray-500">{bio.length}/150</p>
+                  <p className="font-poppins font-bold text-xs text-right text-gray-500">{bio.length}/150</p>
                 </div>
 
                 <div className="border-t-4 border-black pt-6">
-                  <h3 className="font-archivo text-xl uppercase mb-4 bg-red-500 text-white inline-block px-4 py-1 border-2 border-black shadow-[2px_2px_0px_0px_#000]">Change Password</h3>
+                  <h3 className="font-archivo text-xl uppercase mb-4 bg-red-500 text-white inline-block px-4 py-1 border-4 border-black shadow-[4px_4px_0px_0px_#000]">Change Password</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col gap-2">
                       <label className="font-archivo uppercase text-sm text-black">Current Password</label>

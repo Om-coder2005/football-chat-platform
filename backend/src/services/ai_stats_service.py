@@ -74,7 +74,7 @@ class AIStatsService:
     @staticmethod
     def _cache_key(*parts) -> str:
         raw = "_".join(str(p).lower().strip() for p in parts)
-        return hashlib.md5(raw.encode()).hexdigest()
+        return hashlib.sha256(raw.encode()).hexdigest()
 
     @staticmethod
     def _parse_json(text: str) -> dict | None:
@@ -113,11 +113,29 @@ class AIStatsService:
         for i, api_key in enumerate(keys):
             try:
                 client = genai.Client(api_key=api_key)
+                safety_settings = [
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                        threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    ),
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                        threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    ),
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                        threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    ),
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                        threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    )
+                ]
                 if use_search:
                     tool   = types.Tool(google_search=types.GoogleSearch())
-                    config = types.GenerateContentConfig(tools=[tool], temperature=0.0)
+                    config = types.GenerateContentConfig(tools=[tool], temperature=0.0, safety_settings=safety_settings)
                 else:
-                    config = types.GenerateContentConfig(temperature=0.4)
+                    config = types.GenerateContentConfig(temperature=0.4, safety_settings=safety_settings)
 
                 resp = client.models.generate_content(
                     model="gemini-2.0-flash",

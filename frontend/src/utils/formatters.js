@@ -24,18 +24,18 @@ export const formatDateParam = (date) => {
  * Map a match status code to a short display label.
  */
 export const getStatusLabel = (status) => {
-    const map = {
-        SCHEDULED: 'SCH',
-        TIMED: 'SCH',
-        IN_PLAY: 'LIVE',
-        PAUSED: 'HT',
-        FINISHED: 'FT',
-        SUSPENDED: 'SUSP',
-        POSTPONED: 'PPD',
-        CANCELLED: 'CANC',
-        AWARDED: 'AWD',
-    };
-    return map[status] || status || '';
+    switch (status) {
+        case 'SCHEDULED':
+        case 'TIMED': return 'SCH';
+        case 'IN_PLAY': return 'LIVE';
+        case 'PAUSED': return 'HT';
+        case 'FINISHED': return 'FT';
+        case 'SUSPENDED': return 'SUSP';
+        case 'POSTPONED': return 'PPD';
+        case 'CANCELLED': return 'CANC';
+        case 'AWARDED': return 'AWD';
+        default: return status || '';
+    }
 };
 
 /**

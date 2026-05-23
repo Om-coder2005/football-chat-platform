@@ -29,9 +29,9 @@ const CommunityRoom = () => {
   const [messageActionLoading, setMessageActionLoading] = useState({});
   const [memberActionLoading, setMemberActionLoading] = useState({});
   const [showMediaInput, setShowMediaInput] = useState(false);
-  const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [showRightSidebar, setShowRightSidebar] = useState(false);
   const messagesEndRef = useRef(null);
   const [typingUsers, setTypingUsers] = useState(new Set());
   const typingTimeoutRef = useRef(null);
@@ -63,7 +63,7 @@ const CommunityRoom = () => {
   useEffect(() => {
     if (!token) return;
 
-    const newSocket = io('http://localhost:5000', {
+    const newSocket = io('http://localhost:5001', {
       transports: ['websocket'],
       auth: { token }
     });
@@ -230,7 +230,7 @@ const CommunityRoom = () => {
 
   if (loading) return (
     <div className="chat-view-wrapper h-screen bg-[var(--bg-primary)] flex items-center justify-center">
-      <h2 className="neu-heading text-6xl animate-pulse">WARMING UP…</h2>
+      <h2 className="neu-heading text-6xl animate-pulse">{'WARMING UP…'}</h2>
     </div>
   );
 
@@ -275,7 +275,13 @@ const CommunityRoom = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-               <div className="font-archivo text-xs bg-black text-white px-3 py-1 flex items-center gap-2">
+               <button 
+                 onClick={() => setShowRightSidebar(!showRightSidebar)}
+                 className="font-archivo text-xs bg-black text-white px-3 py-1 flex items-center gap-2 lg:hidden shadow-[2px_2px_0px_0px_var(--accent-primary)] border border-black"
+               >
+                 <Activity size={12} /> STATS
+               </button>
+               <div className="font-archivo text-xs bg-black text-white px-3 py-1 flex items-center gap-2 hidden sm:flex">
                  <Users size={12} /> {members.length} FANS
                </div>
             </div>
@@ -285,7 +291,7 @@ const CommunityRoom = () => {
             {messages.length === 0 ? (
               <div className="empty-chat-placeholder h-full flex flex-col items-center justify-center opacity-20 rotate-[-5deg]">
                 <MessageSquare size={80} className="mb-4" />
-                <p className="text-4xl uppercase font-bebas">NO CHATTER YET</p>
+                <p className="text-4xl uppercase font-bebas">{'NO CHATTER YET'}</p>
               </div>
             ) : (
               messages.map((msg, idx) => (
@@ -300,10 +306,10 @@ const CommunityRoom = () => {
                       </div>
                     )}
                     <div className="msg-meta flex justify-between items-center mb-1">
-                      <span className="msg-user text-[11px] font-archivo uppercase text-black/60">
+                      <span className="msg-user text-[12px] font-archivo uppercase text-black/70 font-bold">
                         {msg.username}
                       </span>
-                      <span className="msg-time text-[9px] font-inter font-bold opacity-60">
+                      <span className="msg-time text-[10px] font-poppins font-bold opacity-70">
                         {formatTime(msg.created_at)}
                       </span>
                     </div>
@@ -343,7 +349,7 @@ const CommunityRoom = () => {
                     value={mediaUrl}
                     onChange={(e) => setMediaUrl(e.target.value)}
                     placeholder="IMAGE URL..."
-                    className="flex-1 outline-none font-inter font-bold text-sm"
+                    className="flex-1 outline-none font-poppins font-bold text-sm bg-transparent"
                   />
                   <button onClick={() => setShowMediaInput(false)}><X size={18} /></button>
                 </motion.div>
@@ -378,11 +384,12 @@ const CommunityRoom = () => {
         </main>
 
         {/* Right Sidebar - Stats & News */}
-        <aside className="chat-sidebar-right">
+        <aside className={`chat-sidebar-right ${showRightSidebar ? 'mobile-visible' : ''}`}>
           <div className="sidebar-tabs">
-            <button className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>STATS</button>
-            <button className={`tab-btn ${activeTab === 'news' ? 'active' : ''}`} onClick={() => setActiveTab('news')}>NEWS</button>
-            <button className={`tab-btn ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')}>FANS</button>
+            <button className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>{'STATS'}</button>
+            <button className={`tab-btn ${activeTab === 'news' ? 'active' : ''}`} onClick={() => setActiveTab('news')}>{'NEWS'}</button>
+            <button className={`tab-btn ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')}>{'FANS'}</button>
+            <button className="tab-btn bg-red-600 lg:hidden text-white border-l-2 border-black" onClick={() => setShowRightSidebar(false)}><X size={14} /></button>
           </div>
 
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
@@ -431,16 +438,16 @@ const CommunityRoom = () => {
                     {/* Goals & Events — or score-based fallback */}
                     {combinedEvents.length > 0 ? (
                       <div className="neu-card bg-white p-4">
-                        <h4 className="font-bebas text-xl border-b-2 border-black mb-3">MATCH EVENTS</h4>
+                        <h4 className="font-bebas text-xl border-b-2 border-black mb-3">{'MATCH EVENTS'}</h4>
                         <div className="space-y-3">
                           {combinedEvents.map((event, idx) => (
-                              <div key={idx} className="flex items-center gap-3 text-[10px] font-inter">
-                                <span className="bg-black text-white px-1.5 py-0.5 font-archivo min-w-[28px] text-center">{event.minute}'</span>
+                              <div key={idx} className="flex items-center gap-3 text-[11px] font-poppins font-bold">
+                                <span className="bg-black text-white px-2 py-1 font-archivo min-w-[32px] text-center border border-black shadow-[2px_2px_0px_0px_#ff3b30]">{event.minute}'</span>
                                 {event.eventType === 'goal' ? (
                                   <div className="flex items-center gap-2 flex-1">
-                                    <Trophy size={10} className="text-yellow-500 shrink-0" />
-                                    <span className="font-bold uppercase truncate">{event.scorer?.name || 'Unknown'}</span>
-                                    <span className="opacity-40 ml-auto shrink-0">
+                                    <Trophy size={14} className="text-yellow-500 shrink-0" />
+                                    <span className="uppercase truncate">{event.scorer?.name || 'Unknown'}</span>
+                                    <span className="opacity-60 ml-auto shrink-0">
                                       {event.team?.id === matchData.homeTeam?.id ? 'H' : 'A'}
                                     </span>
                                   </div>
@@ -465,14 +472,14 @@ const CommunityRoom = () => {
                       if (!isFinishedWithGoals) return null;
                       return (
                         <div className="neu-card bg-white p-4">
-                          <h4 className="font-bebas text-xl border-b-2 border-black mb-3">SCORE SUMMARY</h4>
-                          <div className="space-y-2">
+                          <h4 className="font-bebas text-xl border-b-2 border-black mb-3">{'SCORE SUMMARY'}</h4>
+                          <div className="space-y-3">
                             {sh > 0 && Array.from({length: sh}).map((_, i) => (
-                              <div key={`h${i}`} className="flex items-center gap-3 text-[10px] font-inter">
-                                <span className="bg-black text-white px-1.5 py-0.5 font-archivo min-w-[28px] text-center">–</span>
+                              <div key={`h${i}`} className="flex items-center gap-3 text-[11px] font-poppins font-bold">
+                                <span className="bg-black text-white px-2 py-1 font-archivo min-w-[32px] text-center border border-black shadow-[2px_2px_0px_0px_#ff3b30]">–</span>
                                 <div className="flex items-center gap-2 flex-1">
-                                  <Trophy size={10} className="text-yellow-500 shrink-0" />
-                                  <span className="font-bold uppercase truncate opacity-50">Scorer details loading…</span>
+                                  <Trophy size={14} className="text-yellow-500 shrink-0" />
+                                  <span className="font-bold uppercase truncate opacity-50">{'Scorer details loading…'}</span>
                                   <span className="opacity-40 ml-auto shrink-0">H</span>
                                 </div>
                               </div>
@@ -482,13 +489,13 @@ const CommunityRoom = () => {
                                 <span className="bg-black text-white px-1.5 py-0.5 font-archivo min-w-[28px] text-center">–</span>
                                 <div className="flex items-center gap-2 flex-1">
                                   <Trophy size={10} className="text-yellow-500 shrink-0" />
-                                  <span className="font-bold uppercase truncate opacity-50">Scorer details loading…</span>
+                                  <span className="font-bold uppercase truncate opacity-50">{'Scorer details loading…'}</span>
                                   <span className="opacity-40 ml-auto shrink-0">A</span>
                                 </div>
                               </div>
                             ))}
                           </div>
-                          <p className="font-inter text-[8px] opacity-30 mt-3 uppercase">Scorer data will appear shortly</p>
+                          <p className="font-inter text-[8px] opacity-30 mt-3 uppercase">{'Scorer data will appear shortly'}</p>
                         </div>
                       );
                     })()}
@@ -496,7 +503,7 @@ const CommunityRoom = () => {
                     {/* Statistics */}
                     {matchStats && (
                       <div className="neu-card bg-black text-white p-4">
-                        <h4 className="font-bebas text-xl border-b border-white/20 mb-4 text-yellow-400">MATCH STATS</h4>
+                        <h4 className="font-bebas text-xl border-b border-white/20 mb-4 text-yellow-400">{'MATCH STATS'}</h4>
                         <div className="space-y-4">
                           {matchStats.map((stat, idx) => {
                             const total = (stat.home || 0) + (stat.away || 0) || 1;
@@ -523,15 +530,15 @@ const CommunityRoom = () => {
                     {/* Lineups */}
                     {(matchData.homeTeam?.lineup?.length > 0 || matchData.awayTeam?.lineup?.length > 0) && (
                       <div className="neu-card bg-white p-4">
-                        <h4 className="font-bebas text-xl border-b-2 border-black mb-3">LINEUPS</h4>
+                        <h4 className="font-bebas text-xl border-b-2 border-black mb-3">{'LINEUPS'}</h4>
                         <div className="grid grid-cols-2 gap-4">
                           {[matchData.homeTeam, matchData.awayTeam].map((team, tIdx) => (
                             <div key={tIdx} className="space-y-2 overflow-hidden">
                               <p className="font-archivo text-[9px] uppercase border-b border-black/10 pb-1 font-bold truncate">{team?.shortName || team?.name}</p>
                               <div className="space-y-1">
                                 {team?.lineup?.slice(0, 11).map((player, pIdx) => (
-                                  <div key={pIdx} className="flex items-center gap-1.5 text-[9px] font-inter font-bold truncate">
-                                    <span className="text-[8px] opacity-40 w-3">{player.shirtNumber}</span>
+                                  <div key={pIdx} className="flex items-center gap-2 text-[10px] font-poppins font-bold truncate mb-1">
+                                    <span className="text-[9px] opacity-60 w-4 bg-gray-100 text-center border border-black">{player.shirtNumber}</span>
                                     <span className="truncate">{player.name}</span>
                                   </div>
                                 ))}
@@ -545,7 +552,7 @@ const CommunityRoom = () => {
                 ) : (
                   <div className="neu-card bg-white/50 border-dashed py-12 flex flex-col items-center text-center">
                     <Info size={32} className="text-gray-300 mb-2" />
-                    <p className="font-archivo text-xs text-gray-400">NO LIVE MATCH DATA</p>
+                    <p className="font-archivo text-xs text-gray-400">{'NO LIVE MATCH DATA'}</p>
                   </div>
                 )}
               </div>
@@ -557,18 +564,18 @@ const CommunityRoom = () => {
 
             {activeTab === 'members' && (
               <div className="p-4 space-y-4 overflow-y-auto flex-1">
-                <h3 className="neu-heading text-xl mb-4 border-b-2 border-black pb-2">THE FIRM ({members.length})</h3>
+                <h3 className="neu-heading text-xl mb-4 border-b-2 border-black pb-2">{'THE FIRM'} ({members.length})</h3>
                 {members.map(member => (
                   <div key={member.user_id} className="neu-box bg-white p-3 flex items-center gap-3">
                     <div className="w-10 h-10 border-2 border-black bg-[var(--accent-secondary)] flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
                        <span className="text-white font-archivo">{member.username.charAt(0).toUpperCase()}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                       <div className="flex items-center gap-2">
-                         <span className="font-archivo text-xs uppercase truncate">{member.username}</span>
-                         {member.role === 'admin' && <Shield size={10} className="text-red-500" />}
+                       <div className="flex items-center gap-2 mb-1">
+                         <span className="font-archivo text-sm uppercase truncate font-bold">{member.username}</span>
+                         {member.role === 'admin' && <Shield size={12} className="text-red-500" />}
                        </div>
-                       <span className="font-inter text-[10px] font-bold text-gray-400 uppercase tracking-widest">{member.role}</span>
+                       <span className="font-poppins text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-gray-100 border border-black px-1 py-0.5">{member.role}</span>
                     </div>
                   </div>
                 ))}

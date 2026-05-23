@@ -117,12 +117,12 @@ const LiveScores = () => {
 
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Hero */}
-        <div className="mb-12 border-b-4 border-black pb-8 relative overflow-hidden">
-          <div className="comic-sticker top-0 right-4 rotate-[-8deg] bg-red-500 text-white text-xl px-4 py-2 hidden md:block flex items-center gap-2">
-            <Activity size={20} /> MATCHDAY
+        <div className="mb-12 border-b-8 border-black pb-8 relative overflow-hidden">
+          <div className="comic-sticker-abs top-0 right-4 rotate-[-8deg] bg-red-500 text-white text-xl px-4 py-2 hidden md:flex items-center gap-2">
+            <Activity size={24} /> MATCHDAY
           </div>
-          <h1 className="neu-heading text-7xl md:text-[100px]">LIVE SCORES</h1>
-          <p className="font-inter font-bold text-xl bg-yellow-300 inline-block px-4 py-2 border-2 border-black rotate-1 shadow-[4px_4px_0px_0px_#000] mt-4">
+          <h1 className="neu-heading text-7xl md:text-[110px] tracking-tight">LIVE SCORES</h1>
+          <p className="font-poppins font-bold text-2xl bg-yellow-300 inline-block px-5 py-3 border-4 border-black rotate-2 shadow-[6px_6px_0px_0px_#000] mt-4">
             The Terraces' Source of Truth
           </p>
         </div>
@@ -134,11 +134,11 @@ const LiveScores = () => {
             className="neu-button-secondary py-3 px-5 text-2xl"
             aria-label="Previous day"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={28} />
           </button>
-          <div className="flex-1 bg-white border-4 border-black shadow-[6px_6px_0px_0px_#000] p-4 text-center">
-            <span className="font-archivo text-xl uppercase tracking-widest flex items-center justify-center gap-3">
-              <Calendar size={20} /> {getDisplayDate()}
+          <div className="flex-1 bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000] p-5 text-center">
+            <span className="font-archivo text-2xl uppercase tracking-widest flex items-center justify-center gap-3">
+              <Calendar size={24} /> {getDisplayDate()}
             </span>
           </div>
           <button
@@ -161,8 +161,8 @@ const LiveScores = () => {
         {/* Matches Section */}
         <section className="mb-16">
           <div className="flex items-center gap-4 mb-8">
-            <h2 className="font-bebas text-5xl tracking-widest uppercase">FIXTURES & RESULTS</h2>
-            <div className="h-1 flex-1 bg-black"></div>
+            <h2 className="font-bebas text-6xl tracking-widest uppercase">FIXTURES & RESULTS</h2>
+            <div className="h-2 flex-1 bg-black"></div>
           </div>
 
           {loadingMatches ? (
@@ -178,11 +178,11 @@ const LiveScores = () => {
             </div>
           ) : groupedMatches.length === 0 ? (
             <div className="neu-card bg-yellow-100 text-center py-16 flex flex-col items-center">
-              <div className="w-24 h-24 bg-yellow-400 border-4 border-black flex items-center justify-center shadow-[6px_6px_0px_0px_#000] mb-6 rotate-3">
-                <Activity size={48} color="#000" />
+              <div className="w-28 h-28 bg-yellow-400 border-4 border-black flex items-center justify-center shadow-[8px_8px_0px_0px_#000] mb-8 rotate-3">
+                <Activity size={56} color="#000" />
               </div>
-              <p className="font-archivo text-3xl uppercase mb-2">No Matches On This Date</p>
-              <p className="font-inter font-bold opacity-60">Try a different date or browse the leagues below</p>
+              <p className="font-archivo text-4xl uppercase mb-3">No Matches On This Date</p>
+              <p className="font-poppins font-bold text-lg opacity-70">Try a different date or browse the leagues below</p>
             </div>
           ) : (
             <div className="flex flex-col gap-8">
@@ -201,19 +201,19 @@ const LiveScores = () => {
                     </span>
                   </div>
 
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-4">
                     {group.matches.map((match) => (
                       <Link
                         key={match.id}
                         to={`/match/${match.id}`}
-                        className="flex items-center gap-4 bg-gray-50 border-2 border-black p-4 shadow-[3px_3px_0px_0px_#000] hover:-translate-y-1 hover:shadow-[5px_5px_0px_0px_#000] transition-all group"
+                        className="flex items-center gap-4 bg-white border-4 border-black p-5 shadow-[4px_4px_0px_0px_#000] hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_#000] transition-all group"
                       >
                         {/* Status */}
-                        <div className="w-16 flex-shrink-0 text-center">
-                          <span className={`font-archivo text-xs px-2 py-1 border border-black ${getStatusColor(match.status)}`}>
+                        <div className="w-20 flex-shrink-0 text-center">
+                          <span className={`font-archivo text-sm px-3 py-1 border-2 border-black ${getStatusColor(match.status)}`}>
                             {getStatusLabel(match.status)}
                           </span>
-                          <p className="font-inter font-bold text-xs mt-1 opacity-60">{formatTime(match.utcDate)}</p>
+                          <p className="font-poppins font-bold text-sm mt-2 opacity-70">{formatTime(match.utcDate)}</p>
                         </div>
 
                         {/* Home Team */}
@@ -227,14 +227,14 @@ const LiveScores = () => {
                         </div>
 
                         {/* Score */}
-                        <div className="flex-shrink-0 w-24 text-center">
-                          <span className="font-bebas text-3xl bg-black text-white px-4 py-1 border-2 border-black shadow-[2px_2px_0px_0px_#ff3b30]">
+                        <div className="flex-shrink-0 w-28 text-center">
+                          <span className="font-bebas text-4xl bg-black text-white px-5 py-2 border-2 border-black shadow-[4px_4px_0px_0px_#ff3b30] group-hover:shadow-[6px_6px_0px_0px_#ff3b30] transition-shadow">
                             {match.score?.fullTime?.home != null
                               ? `${match.score.fullTime.home}-${match.score.fullTime.away}`
                               : 'VS'}
                           </span>
                           {match.score?.halfTime?.home != null && (
-                            <p className="font-inter text-xs opacity-60 mt-1">HT: {match.score.halfTime.home}-{match.score.halfTime.away}</p>
+                            <p className="font-poppins text-xs opacity-70 mt-2 font-bold">HT: {match.score.halfTime.home}-{match.score.halfTime.away}</p>
                           )}
                         </div>
 
@@ -261,10 +261,10 @@ const LiveScores = () => {
         {/* Browse Leagues Section */}
         <section>
           <div className="flex items-center gap-4 mb-8">
-            <h2 className="font-bebas text-5xl tracking-widest uppercase">BROWSE LEAGUES</h2>
-            <div className="h-1 flex-1 bg-black"></div>
+            <h2 className="font-bebas text-6xl tracking-widest uppercase">BROWSE LEAGUES</h2>
+            <div className="h-2 flex-1 bg-black"></div>
           </div>
-          <p className="font-inter font-bold text-xl mb-8 bg-white border-2 border-black inline-block px-4 py-2 shadow-[4px_4px_0px_0px_#000] -rotate-1">
+          <p className="font-poppins font-bold text-xl mb-8 bg-white border-4 border-black inline-block px-5 py-3 shadow-[6px_6px_0px_0px_#000] -rotate-2">
             Select a league to view all fixtures and results
           </p>
 
@@ -281,16 +281,16 @@ const LiveScores = () => {
                   className="neu-box bg-white flex items-center gap-4 p-5 group"
                   style={{ transform: `rotate(${i % 3 === 0 ? '-1deg' : i % 3 === 1 ? '0.5deg' : '1deg'})` }}
                 >
-                  <div className="w-14 h-14 border-3 border-black flex items-center justify-center flex-shrink-0 bg-gray-100">
+                  <div className="w-16 h-16 border-4 border-black flex items-center justify-center flex-shrink-0 bg-gray-100">
                     {comp.emblem ? (
-                      <img src={comp.emblem} alt="" className="w-10 h-10 object-contain" />
+                      <img src={comp.emblem} alt="" className="w-12 h-12 object-contain" />
                     ) : (
-                      <Trophy size={28} />
+                      <Trophy size={32} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-archivo uppercase text-base group-hover:underline line-clamp-1">{comp.name}</h3>
-                    <span className="font-inter font-bold text-sm opacity-60">{comp.area?.name || comp.country || ''}</span>
+                    <h3 className="font-archivo uppercase text-lg group-hover:underline line-clamp-1">{comp.name}</h3>
+                    <span className="font-poppins font-bold text-sm opacity-70">{comp.area?.name || comp.country || ''}</span>
                   </div>
                   <span className="font-archivo text-xl group-hover:translate-x-2 transition-transform">→</span>
                 </Link>

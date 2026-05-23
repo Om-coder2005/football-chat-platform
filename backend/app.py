@@ -1,6 +1,10 @@
 from gevent import monkey
 monkey.patch_all()
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, render_template
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from flask_jwt_extended import JWTManager, decode_token
@@ -16,14 +20,9 @@ from src.services.message_service import MessageService
 from src.api.routes.news_routes import news_bp
 from src.services.news_service import NewsService
 from apscheduler.schedulers.background import BackgroundScheduler
-import os
-from dotenv import load_dotenv
 from google import genai
 import threading
 import atexit
-
-# Load environment variables
-load_dotenv()
 
 
 def _get_cors_origins():
@@ -286,9 +285,22 @@ def handle_message(data):
                     # Very simple moderation/description using Gemini
                     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", ""))
                     prompt = f"Please describe this image in one short sentence for visually impaired fans: {media_url}"
+                    from google.genai import types
                     response = client.models.generate_content(
                         model="gemini-2.5-flash",
                         contents=prompt,
+                        config=types.GenerateContentConfig(
+                            safety_settings=[
+                                types.SafetySetting(
+                                    category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                                    threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                                ),
+                                types.SafetySetting(
+                                    category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                                    threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                                )
+                            ]
+                        )
                     )
                     media_desc = response.text.strip()
                 except Exception as e:
@@ -326,7 +338,7 @@ def handle_message(data):
 # ========== END SOCKET.IO EVENTS ==========
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))
+    port = int(os.getenv("PORT", "5001"))
     print(f"Starting server on port {port}...")
     socketio.run(
         app,

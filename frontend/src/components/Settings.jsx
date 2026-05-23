@@ -32,8 +32,8 @@ const Settings = () => {
 
         {/* Theme Picker */}
         <section style={{ marginBottom:'3rem' }}>
-          <h2 style={{ fontFamily:'"Archivo Black",sans-serif', fontSize:'1.5rem', textTransform:'uppercase', color:'var(--text-primary)', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'0.5rem' }}>
-            <Palette size={20} /> Select Your Colors
+          <h2 style={{ fontFamily:'var(--font-bebas)', fontSize:'2rem', textTransform:'uppercase', color:'var(--text-primary)', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'0.5rem' }}>
+            <Palette size={24} /> Select Your Colors
           </h2>
 
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:'1.25rem' }}>
@@ -60,7 +60,7 @@ const Settings = () => {
                     <div style={{ flex:2, background:t.color }} />
                     <div style={{ flex:1, background:t.highlight }} />
                   </div>
-                  <span style={{ fontFamily:'"Archivo Black",sans-serif', fontSize:'0.85rem', textTransform:'uppercase', color: active ? 'var(--highlight-text)' : 'var(--text-primary)', display:'block' }}>
+                  <span style={{ fontFamily:'var(--font-archivo)', fontSize:'0.9rem', textTransform:'uppercase', color: active ? 'var(--highlight-text)' : 'var(--text-primary)', display:'block', fontWeight: 800 }}>
                     {t.name}
                   </span>
                   {active && (
@@ -76,8 +76,8 @@ const Settings = () => {
 
         {/* Coming Soon */}
         <section style={{ borderTop:'4px solid var(--border-color)', paddingTop:'2.5rem', opacity:0.6 }}>
-          <h2 style={{ fontFamily:'"Archivo Black",sans-serif', fontSize:'1.5rem', textTransform:'uppercase', color:'var(--text-primary)', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'0.5rem' }}>
-            <Type size={20} /> Chat Customization
+          <h2 style={{ fontFamily:'var(--font-bebas)', fontSize:'2rem', textTransform:'uppercase', color:'var(--text-primary)', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'0.5rem' }}>
+            <Type size={24} /> Chat Customization
             <span className="comic-sticker" style={{ fontSize:'0.65rem', marginLeft:'0.5rem' }}>COMING SOON</span>
           </h2>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'1rem', cursor:'not-allowed' }}>
@@ -87,8 +87,8 @@ const Settings = () => {
             ].map(({ icon: Icon, label, desc }) => (
               <div key={label} style={{ border:'3px solid var(--border-color)', background:'var(--bg-tertiary)', padding:'1.25rem', boxShadow:'3px 3px 0 var(--shadow-color)' }}>
                 <Icon size={20} color="var(--text-secondary)" style={{ marginBottom:'0.5rem' }} />
-                <p style={{ fontFamily:'"Archivo Black",sans-serif', fontSize:'1rem', textTransform:'uppercase', color:'var(--text-primary)', marginBottom:'0.25rem' }}>{label}</p>
-                <p style={{ fontFamily:'"Inter",sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-secondary)' }}>{desc}</p>
+                <p style={{ fontFamily:'var(--font-archivo)', fontSize:'1rem', textTransform:'uppercase', color:'var(--text-primary)', marginBottom:'0.25rem' }}>{label}</p>
+                <p style={{ fontFamily:'var(--font-poppins)', fontWeight:700, fontSize:'0.85rem', color:'var(--text-secondary)' }}>{desc}</p>
               </div>
             ))}
           </div>

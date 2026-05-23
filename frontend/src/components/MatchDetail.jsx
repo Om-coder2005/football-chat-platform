@@ -32,8 +32,18 @@ const MatchDetail = () => {
 
 
   const getStatusLabel = (status) => {
-    const map = { SCHEDULED: 'Scheduled', TIMED: 'Upcoming', IN_PLAY: 'LIVE', PAUSED: 'Half Time', FINISHED: 'Full Time', SUSPENDED: 'Suspended', POSTPONED: 'Postponed', CANCELLED: 'Cancelled', AWARDED: 'Awarded' };
-    return map[status] || status || '';
+    switch (status) {
+      case 'SCHEDULED': return 'Scheduled';
+      case 'TIMED': return 'Upcoming';
+      case 'IN_PLAY': return 'LIVE';
+      case 'PAUSED': return 'Half Time';
+      case 'FINISHED': return 'Full Time';
+      case 'SUSPENDED': return 'Suspended';
+      case 'POSTPONED': return 'Postponed';
+      case 'CANCELLED': return 'Cancelled';
+      case 'AWARDED': return 'Awarded';
+      default: return status || '';
+    }
   };
 
   const isLive = match?.status === 'IN_PLAY' || match?.status === 'PAUSED';
@@ -71,90 +81,90 @@ const MatchDetail = () => {
         {/* Back */}
         <button
           onClick={() => navigate(-1)}
-          className="neu-button-secondary mb-8 py-2 px-6 flex items-center gap-2 text-sm"
+          className="neu-button-secondary mb-10 py-3 px-6 flex items-center gap-3 text-base shadow-[4px_4px_0px_0px_#000] hover:shadow-[6px_6px_0px_0px_#000] transition-all hover:-translate-y-1"
         >
-          <ChevronLeft size={16} /> BACK
+          <ChevronLeft size={20} /> BACK
         </button>
 
         {loading ? (
-          <div className="neu-card bg-white text-center py-24">
-            <p className="neu-heading text-5xl animate-pulse">LOADING...</p>
+          <div className="neu-card bg-white text-center py-24 border-4 border-black shadow-[8px_8px_0px_0px_#000]">
+            <p className="neu-heading text-6xl animate-pulse">LOADING...</p>
           </div>
         ) : error ? (
-          <div className="neu-card bg-red-100 text-center py-16 flex flex-col items-center">
-            <AlertTriangle size={48} className="text-red-800 mb-4" />
-            <p className="font-archivo text-3xl uppercase text-red-800 mb-6">{error}</p>
-            <button className="neu-button bg-red-500 text-white" onClick={fetchMatchDetails}>TRY AGAIN</button>
+          <div className="neu-card bg-red-100 text-center py-20 flex flex-col items-center border-4 border-black shadow-[8px_8px_0px_0px_#000] rotate-1">
+            <AlertTriangle size={56} className="text-red-800 mb-6" />
+            <p className="font-archivo text-4xl uppercase text-red-800 mb-8">{error}</p>
+            <button className="neu-button bg-red-500 text-white text-xl" onClick={fetchMatchDetails}>TRY AGAIN</button>
           </div>
         ) : match ? (
           <div className="flex flex-col gap-8">
             {/* Competition Banner */}
-            <div className="neu-card bg-black text-white flex items-center gap-4 py-4">
+            <div className="neu-card bg-black text-white flex items-center gap-5 py-5 border-4 border-black shadow-[8px_8px_0px_0px_#000]">
               {match.competition?.emblem && (
-                <img src={match.competition.emblem} alt="" className="w-12 h-12 object-contain" />
+                <img src={match.competition.emblem} alt="" className="w-16 h-16 object-contain" />
               )}
               <div>
-                <Link to={`/league/${match.competition?.id}`} className="font-bebas text-3xl tracking-widest hover:text-yellow-400 transition-colors">
+                <Link to={`/league/${match.competition?.id}`} className="font-bebas text-4xl tracking-widest hover:text-yellow-400 transition-colors">
                   {match.competition?.name || 'Competition'}
                 </Link>
-                {match.matchday && <span className="font-archivo text-yellow-400 text-sm ml-4">MATCHDAY {match.matchday}</span>}
+                {match.matchday && <span className="font-archivo text-yellow-400 text-base ml-5">MATCHDAY {match.matchday}</span>}
               </div>
-              <span className="ml-auto font-inter font-bold opacity-60">{match.area?.name || match.competition?.area?.name}</span>
+              <span className="ml-auto font-poppins font-bold opacity-70 text-lg">{match.area?.name || match.competition?.area?.name}</span>
             </div>
 
             {/* Date Bar */}
-            <div className="flex flex-wrap gap-4 items-center">
-              <span className="font-archivo text-xl uppercase bg-yellow-300 px-4 py-2 border-2 border-black shadow-[3px_3px_0px_0px_#000]">{formatFullDate(match.utcDate)}</span>
-              <span className="font-inter font-bold bg-white border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000]">KO: {formatTime(match.utcDate)}</span>
-              {match.venue && <span className="font-inter font-bold bg-gray-100 border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000]">📍 {match.venue}</span>}
+            <div className="flex flex-wrap gap-5 items-center mt-2 mb-2">
+              <span className="font-archivo text-2xl uppercase bg-yellow-300 px-5 py-3 border-4 border-black shadow-[6px_6px_0px_0px_#000]">{formatFullDate(match.utcDate)}</span>
+              <span className="font-poppins font-bold text-lg bg-white border-4 border-black px-5 py-3 shadow-[6px_6px_0px_0px_#000]">KO: {formatTime(match.utcDate)}</span>
+              {match.venue && <span className="font-poppins font-bold text-lg bg-gray-100 border-4 border-black px-5 py-3 shadow-[6px_6px_0px_0px_#000]">📍 {match.venue}</span>}
             </div>
 
             {/* SCOREBOARD — Hero Card */}
-            <div className={`neu-card bg-white relative overflow-hidden ${isLive ? 'ring-4 ring-red-500' : ''}`}>
+            <div className={`neu-card bg-white relative overflow-hidden border-4 border-black shadow-[10px_10px_0px_0px_#000] ${isLive ? 'ring-4 ring-red-500 shadow-[10px_10px_0px_0px_#ef4444]' : ''}`}>
               {isLive && (
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-red-500 animate-pulse"></div>
+                <div className="absolute top-0 left-0 right-0 h-2 bg-red-500 animate-pulse"></div>
               )}
-              <div className="flex flex-col md:flex-row items-center justify-between gap-8 py-8">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-8 py-10">
                 {/* Home Team */}
-                <div className="flex flex-col items-center gap-4 flex-1">
+                <div className="flex flex-col items-center gap-5 flex-1">
                   {match.homeTeam?.crest ? (
-                    <img src={match.homeTeam.crest} alt="" className="w-24 h-24 object-contain drop-shadow-lg" />
+                    <img src={match.homeTeam.crest} alt="" className="w-32 h-32 object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]" />
                   ) : (
-                    <div className="w-24 h-24 bg-gray-200 border-4 border-black flex items-center justify-center font-bebas text-4xl">
+                    <div className="w-32 h-32 bg-gray-200 border-4 border-black flex items-center justify-center font-bebas text-5xl">
                       {match.homeTeam?.tla || 'H'}
                     </div>
                   )}
-                  <h2 className="font-archivo text-2xl uppercase text-center">{match.homeTeam?.shortName || match.homeTeam?.name}</h2>
-                  {match.homeTeam?.formation && <span className="font-inter font-bold text-sm bg-gray-100 border-2 border-black px-2 py-0.5">{match.homeTeam.formation}</span>}
+                  <h2 className="font-archivo text-3xl uppercase text-center">{match.homeTeam?.shortName || match.homeTeam?.name}</h2>
+                  {match.homeTeam?.formation && <span className="font-poppins font-bold text-base bg-gray-100 border-4 border-black px-3 py-1 shadow-[4px_4px_0px_0px_#000]">{match.homeTeam.formation}</span>}
                 </div>
 
                 {/* Score */}
-                <div className="flex flex-col items-center gap-3">
-                  <span className={`font-archivo text-sm uppercase px-4 py-2 border-2 border-black shadow-[3px_3px_0px_0px_#000] ${isLive ? 'bg-red-500 text-white animate-pulse' : 'bg-black text-white'}`}>
+                <div className="flex flex-col items-center gap-4">
+                  <span className={`font-archivo text-base uppercase px-5 py-2 border-4 border-black shadow-[4px_4px_0px_0px_#000] ${isLive ? 'bg-red-500 text-white animate-pulse' : 'bg-black text-white'}`}>
                     {getStatusLabel(match.status)}
                     {match.minute ? ` ${match.minute}'` : ''}
                   </span>
-                  <span className="font-bebas text-8xl leading-none bg-black text-white px-8 py-4 border-4 border-black shadow-[8px_8px_0px_0px_#ff3b30]">
+                  <span className="font-bebas text-[120px] leading-none bg-black text-white px-10 py-5 border-4 border-black shadow-[10px_10px_0px_0px_#ff3b30]">
                     {match.score?.fullTime?.home ?? '-'} – {match.score?.fullTime?.away ?? '-'}
                   </span>
                   {match.score?.halfTime?.home != null && (
-                    <span className="font-archivo text-sm bg-gray-200 border-2 border-black px-3 py-1">
+                    <span className="font-archivo text-base bg-gray-200 border-4 border-black px-4 py-2 shadow-[4px_4px_0px_0px_#000]">
                       HT: {match.score.halfTime.home} – {match.score.halfTime.away}
                     </span>
                   )}
                 </div>
 
                 {/* Away Team */}
-                <div className="flex flex-col items-center gap-4 flex-1">
+                <div className="flex flex-col items-center gap-5 flex-1">
                   {match.awayTeam?.crest ? (
-                    <img src={match.awayTeam.crest} alt="" className="w-24 h-24 object-contain drop-shadow-lg" />
+                    <img src={match.awayTeam.crest} alt="" className="w-32 h-32 object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]" />
                   ) : (
-                    <div className="w-24 h-24 bg-gray-200 border-4 border-black flex items-center justify-center font-bebas text-4xl">
+                    <div className="w-32 h-32 bg-gray-200 border-4 border-black flex items-center justify-center font-bebas text-5xl">
                       {match.awayTeam?.tla || 'A'}
                     </div>
                   )}
-                  <h2 className="font-archivo text-2xl uppercase text-center">{match.awayTeam?.shortName || match.awayTeam?.name}</h2>
-                  {match.awayTeam?.formation && <span className="font-inter font-bold text-sm bg-gray-100 border-2 border-black px-2 py-0.5">{match.awayTeam.formation}</span>}
+                  <h2 className="font-archivo text-3xl uppercase text-center">{match.awayTeam?.shortName || match.awayTeam?.name}</h2>
+                  {match.awayTeam?.formation && <span className="font-poppins font-bold text-base bg-gray-100 border-4 border-black px-3 py-1 shadow-[4px_4px_0px_0px_#000]">{match.awayTeam.formation}</span>}
                 </div>
               </div>
             </div>
@@ -162,32 +172,32 @@ const MatchDetail = () => {
 
             {/* Goals */}
             {match.goals?.length > 0 && (
-              <div className="neu-card bg-white">
-                <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-4">⚽ Goals</h3>
-                <div className="grid grid-cols-2 gap-6">
+              <div className="neu-card bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000]">
+                <h3 className="font-bebas text-5xl uppercase border-b-4 border-black pb-4 mb-6">⚽ GOALS</h3>
+                <div className="grid grid-cols-2 gap-8">
                   <div>
-                    <h4 className="font-archivo uppercase text-sm mb-3 bg-black text-white px-3 py-1 inline-block">{match.homeTeam?.shortName}</h4>
+                    <h4 className="font-archivo uppercase text-lg mb-4 bg-black text-white px-4 py-2 inline-block border-2 border-black">{match.homeTeam?.shortName}</h4>
                     {homeGoals.length > 0 ? homeGoals.map((g, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-2 font-inter font-bold text-sm">
-                        <span className="bg-yellow-300 border border-black px-2 py-0.5 font-archivo text-xs">{g.minute}'</span>
-                        <span>{g.scorer?.name || 'Unknown'}</span>
-                        {g.assist?.name && <span className="opacity-60 text-xs">(ast. {g.assist.name})</span>}
-                        {g.type === 'PENALTY' && <span className="text-xs text-red-600 font-bold">(P)</span>}
-                        {g.type === 'OWN' && <span className="text-xs text-orange-600 font-bold">(OG)</span>}
+                      <div key={i} className="flex items-center gap-3 mb-3 font-poppins font-bold text-base">
+                        <span className="bg-yellow-300 border-2 border-black px-2 py-1 font-archivo text-sm shadow-[2px_2px_0px_0px_#000]">{g.minute}'</span>
+                        <span className="comic-sticker-abs relative shadow-none" style={{animation: 'none', position:'static'}}>{g.scorer?.name || 'Unknown'}</span>
+                        {g.assist?.name && <span className="opacity-60 text-sm">(ast. {g.assist.name})</span>}
+                        {g.type === 'PENALTY' && <span className="text-sm text-red-600 font-bold">(P)</span>}
+                        {g.type === 'OWN' && <span className="text-sm text-orange-600 font-bold">(OG)</span>}
                       </div>
-                    )) : <p className="font-inter opacity-40 font-bold">–</p>}
+                    )) : <p className="font-poppins opacity-40 font-bold text-xl">–</p>}
                   </div>
                   <div>
-                    <h4 className="font-archivo uppercase text-sm mb-3 bg-black text-white px-3 py-1 inline-block">{match.awayTeam?.shortName}</h4>
+                    <h4 className="font-archivo uppercase text-lg mb-4 bg-black text-white px-4 py-2 inline-block border-2 border-black">{match.awayTeam?.shortName}</h4>
                     {awayGoals.length > 0 ? awayGoals.map((g, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-2 font-inter font-bold text-sm justify-end">
-                        {g.type === 'OWN' && <span className="text-xs text-orange-600 font-bold">(OG)</span>}
-                        {g.type === 'PENALTY' && <span className="text-xs text-red-600 font-bold">(P)</span>}
-                        {g.assist?.name && <span className="text-gray-500 text-xs">(ast. {g.assist.name})</span>}
-                        <span>{g.scorer?.name || 'Unknown'}</span>
-                        <span className="bg-yellow-300 border border-black px-2 py-0.5 font-archivo text-xs">{g.minute}'</span>
+                      <div key={i} className="flex items-center gap-3 mb-3 font-poppins font-bold text-base justify-end">
+                        {g.type === 'OWN' && <span className="text-sm text-orange-600 font-bold">(OG)</span>}
+                        {g.type === 'PENALTY' && <span className="text-sm text-red-600 font-bold">(P)</span>}
+                        {g.assist?.name && <span className="text-gray-500 text-sm">(ast. {g.assist.name})</span>}
+                        <span className="comic-sticker-abs relative shadow-none" style={{animation: 'none', position:'static'}}>{g.scorer?.name || 'Unknown'}</span>
+                        <span className="bg-yellow-300 border-2 border-black px-2 py-1 font-archivo text-sm shadow-[2px_2px_0px_0px_#000]">{g.minute}'</span>
                       </div>
-                    )) : <p className="font-inter opacity-40 font-bold text-right">–</p>}
+                    )) : <p className="font-poppins opacity-40 font-bold text-xl text-right">–</p>}
                   </div>
                 </div>
               </div>
@@ -195,21 +205,21 @@ const MatchDetail = () => {
 
             {/* Match Stats */}
             {matchStats && (
-              <div className="neu-card bg-white">
-                <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-6">MATCH STATISTICS</h3>
-                <div className="flex flex-col gap-4">
+              <div className="neu-card bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000]">
+                <h3 className="font-bebas text-5xl uppercase border-b-4 border-black pb-4 mb-8">MATCH STATISTICS</h3>
+                <div className="flex flex-col gap-6">
                   {matchStats.map((stat) => {
                     const total = stat.home + stat.away || 1;
                     const leftPct = stat.isPct ? stat.home : (stat.home / total) * 100;
                     const rightPct = stat.isPct ? stat.away : (stat.away / total) * 100;
                     return (
                       <div key={stat.label}>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="font-archivo text-lg">{stat.home}{stat.suffix || ''}</span>
-                          <span className="font-inter font-bold text-sm opacity-60 uppercase">{stat.label}</span>
-                          <span className="font-archivo text-lg">{stat.away}{stat.suffix || ''}</span>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-archivo text-xl">{stat.home}{stat.suffix || ''}</span>
+                          <span className="font-poppins font-bold text-sm opacity-70 uppercase">{stat.label}</span>
+                          <span className="font-archivo text-xl">{stat.away}{stat.suffix || ''}</span>
                         </div>
-                        <div className="h-4 bg-gray-200 border-2 border-black flex overflow-hidden">
+                        <div className="h-6 bg-gray-200 border-4 border-black flex overflow-hidden">
                           <div className="bg-black transition-all" style={{ width: `${Math.max(leftPct, 2)}%` }}></div>
                           <div className="bg-red-500 transition-all" style={{ width: `${Math.max(rightPct, 2)}%` }}></div>
                         </div>
@@ -222,37 +232,37 @@ const MatchDetail = () => {
 
             {/* Lineups */}
             {(match.homeTeam?.lineup?.length > 0 || match.awayTeam?.lineup?.length > 0) && (
-              <div className="neu-card bg-white">
-                <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-4">STARTING XI</h3>
-                <div className="grid grid-cols-2 gap-6">
+              <div className="neu-card bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000]">
+                <h3 className="font-bebas text-5xl uppercase border-b-4 border-black pb-4 mb-6">STARTING XI</h3>
+                <div className="grid grid-cols-2 gap-8">
                   {[{ team: match.homeTeam }, { team: match.awayTeam }].map(({ team }) => (
                     <div key={team?.id}>
-                      <div className="flex items-center gap-3 mb-4">
-                        {team?.crest && <img src={team.crest} alt="" className="w-8 h-8 object-contain" />}
-                        <h4 className="font-archivo uppercase">{team?.shortName || team?.name}</h4>
-                        {team?.formation && <span className="font-inter font-bold text-xs bg-gray-100 border border-black px-2 py-0.5">{team.formation}</span>}
+                      <div className="flex items-center gap-4 mb-5">
+                        {team?.crest && <img src={team.crest} alt="" className="w-10 h-10 object-contain" />}
+                        <h4 className="font-archivo text-xl uppercase">{team?.shortName || team?.name}</h4>
+                        {team?.formation && <span className="font-poppins font-bold text-sm bg-gray-100 border-2 border-black px-2 py-0.5 shadow-[2px_2px_0px_0px_#000]">{team.formation}</span>}
                       </div>
                       {team?.lineup?.map((p, i) => (
-                        <div key={i} className="flex items-center gap-3 py-1.5 border-b border-gray-100">
-                          <span className="font-archivo w-6 text-center text-sm bg-black text-white">{p.shirtNumber || '-'}</span>
-                          <span className="font-inter font-bold text-sm flex-1">{p.name}</span>
-                          <span className="font-inter text-xs opacity-60">{p.position || ''}</span>
+                        <div key={i} className="flex items-center gap-4 py-2 border-b-2 border-gray-100 hover:bg-yellow-50 transition-colors">
+                          <span className="font-archivo w-8 text-center text-base bg-black text-white border-2 border-black">{p.shirtNumber || '-'}</span>
+                          <span className="font-poppins font-bold text-base flex-1">{p.name}</span>
+                          <span className="font-poppins text-xs opacity-60">{p.position || ''}</span>
                         </div>
                       ))}
                       {team?.bench?.length > 0 && (
-                        <div className="mt-3">
-                          <p className="font-archivo text-xs uppercase opacity-60 mb-2 border-t border-black pt-2">SUBSTITUTES</p>
+                        <div className="mt-5">
+                          <p className="font-archivo text-sm uppercase opacity-60 mb-3 border-t-4 border-black pt-3">SUBSTITUTES</p>
                           {team.bench.map((p, i) => (
-                            <div key={i} className="flex items-center gap-3 py-1 opacity-70">
-                              <span className="font-archivo w-6 text-center text-xs bg-gray-400 text-white">{p.shirtNumber || '-'}</span>
-                              <span className="font-inter font-bold text-xs flex-1">{p.name}</span>
+                            <div key={i} className="flex items-center gap-3 py-1 opacity-80">
+                              <span className="font-archivo w-6 text-center text-xs bg-gray-500 text-white border border-black">{p.shirtNumber || '-'}</span>
+                              <span className="font-poppins font-bold text-sm flex-1">{p.name}</span>
                             </div>
                           ))}
                         </div>
                       )}
                       {team?.coach?.name && (
-                        <p className="mt-3 font-inter font-bold text-sm border-t-2 border-black pt-2">
-                          <span className="font-archivo uppercase text-xs">Coach: </span>{team.coach.name}
+                        <p className="mt-4 font-poppins font-bold text-base border-t-4 border-black pt-3">
+                          <span className="font-archivo uppercase text-sm mr-2 text-yellow-600">Coach:</span>{team.coach.name}
                         </p>
                       )}
                     </div>
@@ -296,9 +306,9 @@ const MatchDetail = () => {
             )}
 
             {/* Match Info */}
-            <div className="neu-card bg-yellow-50">
-              <h3 className="font-bebas text-4xl uppercase border-b-4 border-black pb-3 mb-4">MATCH INFO</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="neu-card bg-yellow-50 border-4 border-black shadow-[8px_8px_0px_0px_#000]">
+              <h3 className="font-bebas text-5xl uppercase border-b-4 border-black pb-4 mb-6">MATCH INFO</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 {[
                   match.competition?.name && { label: 'Competition', value: match.competition.name },
                   match.matchday && { label: 'Matchday', value: match.matchday },
@@ -306,9 +316,9 @@ const MatchDetail = () => {
                   match.group && { label: 'Group', value: match.group.replace(/_/g, ' ') },
                   { label: 'Match ID', value: match.id },
                 ].filter(Boolean).map((item) => (
-                  <div key={item.label} className="bg-white border-2 border-black p-3 shadow-[2px_2px_0px_0px_#000]">
-                    <p className="font-archivo text-xs uppercase opacity-60">{item.label}</p>
-                    <p className="font-inter font-bold text-sm">{item.value}</p>
+                  <div key={item.label} className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_#000] transition-all">
+                    <p className="font-archivo text-sm uppercase opacity-70 mb-1">{item.label}</p>
+                    <p className="font-poppins font-bold text-lg">{item.value}</p>
                   </div>
                 ))}
               </div>

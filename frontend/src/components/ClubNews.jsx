@@ -38,7 +38,7 @@ const ClubNews = ({ clubName }) => {
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-20 gap-4">
       <RefreshCw size={48} className="animate-spin text-[var(--accent-primary)]" />
-      <p className="neu-heading text-2xl uppercase">SCOUTING NEWS...</p>
+      <p className="neu-heading text-2xl uppercase">{'SCOUTING NEWS...'}</p>
     </div>
   );
 
@@ -118,7 +118,7 @@ const ClubNews = ({ clubName }) => {
                     </h3>
                   </div>
                   
-                  <p className="font-inter text-base leading-relaxed text-gray-700 mb-6 line-clamp-3 font-medium">
+                  <p className="font-poppins text-lg leading-relaxed text-gray-700 mb-6 line-clamp-3 font-bold">
                     {item.description}
                   </p>
 
@@ -127,10 +127,10 @@ const ClubNews = ({ clubName }) => {
                       href={item.url || item.article_url} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="neu-button bg-black text-white py-3 px-6 text-sm flex items-center gap-3 hover:bg-[var(--accent-primary)] hover:text-black transition-all group/btn"
+                      className="neu-button bg-black text-white py-4 px-8 text-base flex items-center gap-3 hover:bg-[var(--accent-primary)] hover:text-black transition-all group/btn shadow-[4px_4px_0px_0px_#000] border-2 border-black"
                     >
-                      <span className="font-archivo uppercase tracking-wider">READ FULL REPORT</span>
-                      <ExternalLink size={16} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                      <span className="font-archivo uppercase tracking-wider font-bold">READ FULL REPORT</span>
+                      <ExternalLink size={20} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
                     </a>
                     
                     <div className="opacity-10 group-hover:opacity-40 transition-opacity">
