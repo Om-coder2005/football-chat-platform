@@ -152,7 +152,7 @@ const AppHeader = () => {
     setActiveIndex(p => (p - 1 + matches.length) % matches.length); 
   };
 
-  const active = matches[activeIndex] || null;
+  const active = matches.at(activeIndex) || null;
 
   const renderTicker = () => {
     if (!active) return null;

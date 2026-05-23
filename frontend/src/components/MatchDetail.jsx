@@ -32,8 +32,18 @@ const MatchDetail = () => {
 
 
   const getStatusLabel = (status) => {
-    const map = { SCHEDULED: 'Scheduled', TIMED: 'Upcoming', IN_PLAY: 'LIVE', PAUSED: 'Half Time', FINISHED: 'Full Time', SUSPENDED: 'Suspended', POSTPONED: 'Postponed', CANCELLED: 'Cancelled', AWARDED: 'Awarded' };
-    return map[status] || status || '';
+    switch (status) {
+      case 'SCHEDULED': return 'Scheduled';
+      case 'TIMED': return 'Upcoming';
+      case 'IN_PLAY': return 'LIVE';
+      case 'PAUSED': return 'Half Time';
+      case 'FINISHED': return 'Full Time';
+      case 'SUSPENDED': return 'Suspended';
+      case 'POSTPONED': return 'Postponed';
+      case 'CANCELLED': return 'Cancelled';
+      case 'AWARDED': return 'Awarded';
+      default: return status || '';
+    }
   };
 
   const isLive = match?.status === 'IN_PLAY' || match?.status === 'PAUSED';
