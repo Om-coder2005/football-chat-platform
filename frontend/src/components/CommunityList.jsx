@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { communityAPI } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import AppHeader from './AppHeader';
 import { Plus, Users, ArrowRight } from 'lucide-react';
 
@@ -11,6 +12,7 @@ const CommunityList = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCommunity, setNewCommunity]   = useState({ name: '', description: '', club_name: '' });
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => { 
     fetchCommunities(); 
@@ -39,8 +41,9 @@ const CommunityList = () => {
     try { 
       await communityAPI.join(id); 
       fetchMyCommunities(); 
+      toast.success('Community joined.');
     } catch (e) { 
-      alert(e.response?.data?.message || 'Failed to join community'); 
+      toast.error(e.response?.data?.message || 'Failed to join community'); 
     }
   };
 
@@ -52,8 +55,9 @@ const CommunityList = () => {
       setNewCommunity({ name: '', description: '', club_name: '' }); 
       fetchCommunities(); 
       fetchMyCommunities(); 
+      toast.success('Community created.');
     } catch (e) { 
-      alert(e.response?.data?.message || 'Failed to create community'); 
+      toast.error(e.response?.data?.message || 'Failed to create community'); 
     }
   };
 

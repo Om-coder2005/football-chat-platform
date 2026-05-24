@@ -109,3 +109,39 @@ class MessageService:
             return count
         except Exception as e:
             return 0
+
+    @staticmethod
+    def toggle_pin(db: Session, message_id, user_id):
+        """Toggle pin status for a message (admin/moderator only)"""
+        try:
+            message = db.query(Message).filter(Message.id == message_id).first()
+            if not message:
+                return False, "Message not found", 404, None
+            
+            # Check if user is admin or moderator
+            membership = db.query(CommunityMember).filter_by(
+                user_id=user_id,
+                community_id=message.community_id
+            ).first()
+            
+            if not membership or membership.role not in ('admin', 'moderator'):
+                return False, "Only admins or moderators can pin messages", 403, None
+            
+            if message.is_pinned:
+                message.is_pinned = False
+                action = "unpinned"
+            else:
+                # Unpin other messages in the same community
+                db.query(Message).filter(
+                    Message.community_id == message.community_id,
+                    Message.is_pinned == True
+                ).update({Message.is_pinned: False}, synchronize_session=False)
+                
+                message.is_pinned = True
+                action = "pinned"
+            
+            db.commit()
+            return True, f"Message successfully {action}", 200, message
+        except Exception as e:
+            db.rollback()
+            return False, f"Error toggling pin: {str(e)}", 500, None

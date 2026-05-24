@@ -20,7 +20,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const authTokenInvalid =
+      error.response?.status === 401 ||
+      (error.response?.status === 422 && /subject|token|jwt/i.test(error.response?.data?.msg || ''));
+
+    if (authTokenInvalid) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
@@ -54,6 +58,16 @@ export const communityAPI = {
   join: (id) => api.post(`/communities/${id}/join`),
   leave: (id) => api.post(`/communities/${id}/leave`),
   getTacticalSummary: (id) => api.get(`/communities/${id}/tactical-summary`),
+  muteMember: (communityId, memberUserId, duration) =>
+    api.post(`/communities/${communityId}/members/${memberUserId}/mute`, { duration }),
+  warnMember: (communityId, memberUserId) =>
+    api.post(`/communities/${communityId}/members/${memberUserId}/warn`),
+  banMember: (communityId, memberUserId, reason) =>
+    api.post(`/communities/${communityId}/members/${memberUserId}/ban`, { reason }),
+  getTacticBoard: (communityId) =>
+    api.get(`/communities/${communityId}/tactic-board`),
+  saveTacticBoard: (communityId, data) =>
+    api.post(`/communities/${communityId}/tactic-board`, data),
 };
 
 export const messageAPI = {
@@ -63,11 +77,21 @@ export const messageAPI = {
     api.get(`/communities/${communityId}/messages`, { params: { limit, offset } }),
   delete: (messageId) => api.delete(`/messages/${messageId}`),
   toggleHighlight: (messageId) => api.put(`/messages/${messageId}/highlight`),
+  togglePin: (messageId) => api.put(`/messages/${messageId}/pin`),
   sendNotification: (communityId, content) => api.post(`/communities/${communityId}/notifications`, { content }),
 };
 
 export const newsAPI = {
-  getClubNews: (clubName, limit = 10) => api.get(`/news/${clubName}`, { params: { limit } })
+  getClubNews: (clubName, limit = 10) => api.get(`/news/${clubName}`, { params: { limit } }),
+  getGlobalNews: (limit = 10) => api.get('/news/global', { params: { limit } })
+};
+
+export const transferAPI = {
+  getRumors: (params = {}) => api.get('/transfers/rumors', { params }),
+  createRumor: (data) => api.post('/transfers/rumors', data),
+  searchRumors: (data = {}) => api.post('/transfers/rumors/search-news', data),
+  importNews: (data = {}) => api.post('/transfers/rumors/import-news', data),
+  rateRumor: (rumorId, rating) => api.post(`/transfers/rumors/${rumorId}/rate`, { rating })
 };
 
 export const matchAPI = {
@@ -87,4 +111,22 @@ export const matchAPI = {
     api.get('/matches/team', { params: { teamName } }),
 };
 
+export const stickerAPI = {
+  getAll: () => api.get('/stickers'),
+  getMyOwned: () => api.get('/stickers/my'),
+  purchase: (stickerId, paymentDetails) => api.post(`/stickers/${stickerId}/purchase`, paymentDetails),
+};
+
+export const rivalryAPI = {
+  schedule: (data) => api.post('/rivalries', data),
+  getAll: () => api.get('/rivalries'),
+  getSuggestions: () => api.get('/rivalries/suggestions'),
+  getDetails: (id) => api.get(`/rivalries/${id}`),
+  getMessages: (id, limit = 50, offset = 0) => api.get(`/rivalries/${id}/messages`, { params: { limit, offset } }),
+  createPoll: (id, data) => api.post(`/rivalries/${id}/polls`, data),
+  getPolls: (id) => api.get(`/rivalries/${id}/polls`),
+  votePoll: (pollId, selectedOption) => api.post(`/polls/${pollId}/vote`, { selected_option: selectedOption }),
+};
+
 export default api;
+

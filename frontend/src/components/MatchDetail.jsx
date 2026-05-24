@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { matchAPI } from '../services/api';
 import { formatTime } from '../utils/formatters';
 import AppHeader from './AppHeader';
-import { ChevronLeft, AlertTriangle, Activity, Shield, Info, Calendar, Clock, Trophy, RefreshCw } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Activity, Shield, Info, Calendar, Clock, Trophy, RefreshCw, MapPin, CircleDot } from 'lucide-react';
 
 const MatchDetail = () => {
   const { matchId } = useParams();
@@ -116,7 +116,11 @@ const MatchDetail = () => {
             <div className="flex flex-wrap gap-5 items-center mt-2 mb-2">
               <span className="font-archivo text-2xl uppercase bg-yellow-300 px-5 py-3 border-4 border-black shadow-[6px_6px_0px_0px_#000]">{formatFullDate(match.utcDate)}</span>
               <span className="font-poppins font-bold text-lg bg-white border-4 border-black px-5 py-3 shadow-[6px_6px_0px_0px_#000]">KO: {formatTime(match.utcDate)}</span>
-              {match.venue && <span className="font-poppins font-bold text-lg bg-gray-100 border-4 border-black px-5 py-3 shadow-[6px_6px_0px_0px_#000]">📍 {match.venue}</span>}
+              {match.venue && (
+                <span className="font-poppins font-bold text-lg bg-gray-100 border-4 border-black px-5 py-3 shadow-[6px_6px_0px_0px_#000] inline-flex items-center gap-2">
+                  <MapPin size={20} /> {match.venue}
+                </span>
+              )}
             </div>
 
             {/* SCOREBOARD — Hero Card */}
@@ -173,7 +177,7 @@ const MatchDetail = () => {
             {/* Goals */}
             {match.goals?.length > 0 && (
               <div className="neu-card bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000]">
-                <h3 className="font-bebas text-5xl uppercase border-b-4 border-black pb-4 mb-6">⚽ GOALS</h3>
+                <h3 className="font-bebas text-5xl uppercase border-b-4 border-black pb-4 mb-6 flex items-center gap-3"><CircleDot size={38} /> GOALS</h3>
                 <div className="grid grid-cols-2 gap-8">
                   <div>
                     <h4 className="font-archivo uppercase text-lg mb-4 bg-black text-white px-4 py-2 inline-block border-2 border-black">{match.homeTeam?.shortName}</h4>

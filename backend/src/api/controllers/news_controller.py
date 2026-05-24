@@ -21,3 +21,27 @@ class NewsController:
                 'success': False,
                 'message': str(e)
             }), 500
+
+    @staticmethod
+    def get_global_news():
+        """Get latest news across all clubs"""
+        try:
+            limit = request.args.get('limit', 20, type=int)
+            with db_session() as db:
+                articles = NewsService.get_global_news(db, limit)
+                # Fallback: if empty, try to fetch some news immediately in background or synchronously
+                if not articles:
+                    NewsService.fetch_and_store_news(db)
+                    articles = NewsService.get_global_news(db, limit)
+                
+                return jsonify({
+                    'success': True,
+                    'count': len(articles),
+                    'articles': articles
+                }), 200
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': str(e)
+            }), 500
+

@@ -4,8 +4,15 @@ import logging
 import time
 import json
 from datetime import datetime, timedelta
+from requests.exceptions import ConnectionError as ReqConnectionError, Timeout as ReqTimeout
 
 logger = logging.getLogger(__name__)
+
+# ── Circuit-breaker state ────────────────────────────────────────────
+# When a DNS / network failure is detected we stop hammering the API
+# for CIRCUIT_BACKOFF_SECONDS and only log once per backoff window.
+CIRCUIT_BACKOFF_SECONDS = 300   # 5 minutes
+_circuit_open_until: float = 0  # epoch timestamp; 0 = closed (healthy)
 
 # SportsDB service removed
 
@@ -117,6 +124,7 @@ class MatchService:
     
     _current_key_idx = 0
     _cache = {}
+    _team_profile_cache = {}
     _key_cooldowns = {} # Stores (timestamp) when a key was rate limited
     
     @staticmethod
@@ -154,75 +162,95 @@ class MatchService:
     @staticmethod
     def _make_request(endpoint, params=None, retries=None):
         """
-        Make HTTP request with key rotation and automatic throttling.
+        Make HTTP request with key rotation, throttling, and a circuit-breaker
+        that silences log spam when the network is unavailable.
         """
+        global _circuit_open_until
+
         if not MatchService.API_KEYS:
             logger.warning("No Football Data API keys configured.")
             return MatchService._get_empty_response(endpoint)
-            
-        # Default retries to number of keys
+
+        # ── Circuit-breaker: skip the request silently if we're in backoff ──
+        now = time.time()
+        if now < _circuit_open_until:
+            logger.debug(
+                "Football API circuit open – skipping request (backoff expires in "
+                f"{int(_circuit_open_until - now)}s): {endpoint}"
+            )
+            return MatchService._get_empty_response(endpoint)
+
+        # Default retries to number of keys (at least 1)
         if retries is None:
-            retries = len(MatchService.API_KEYS) * 2
+            retries = max(1, len(MatchService.API_KEYS))
 
         cache_key = f"{endpoint}_{json.dumps(params, sort_keys=True)}"
-        now = time.time()
-        
-        # Caching logic
-        is_matches = "/matches" in endpoint
+
+        # ── Cache check ──
+        is_matches    = "/matches" in endpoint
         is_live_filter = params and params.get("status") == "LIVE"
         ttl = 60 if (is_matches or is_live_filter) else 300
-        
+
         if cache_key in MatchService._cache:
             cache_time, cache_data = MatchService._cache[cache_key]
             if now - cache_time < ttl:
                 return cache_data
-        
+
         attempt = 0
         while attempt < retries:
             api_key = MatchService._get_active_key()
-            url = f"{MatchService.BASE_URL}{endpoint}"
-            headers = {
-                "X-Auth-Token": api_key,
-                "Content-Type": "application/json"
-            }
-            
+            url     = f"{MatchService.BASE_URL}{endpoint}"
+            headers = {"X-Auth-Token": api_key, "Content-Type": "application/json"}
+
             try:
-                response = requests.get(url, headers=headers, params=params, timeout=15)
-                
+                response = requests.get(url, headers=headers, params=params, timeout=10)
+
                 if response.status_code == 429:
                     reset_time = int(response.headers.get("X-RequestCounter-Reset", 60))
-                    logger.warning(f"Rate limited on key index {MatchService._current_key_idx}. Cooling down for {reset_time}s.")
-                    
-                    # Mark current key as on cooldown
+                    logger.warning(
+                        f"Rate limited on key index {MatchService._current_key_idx}. "
+                        f"Cooling down for {reset_time}s."
+                    )
                     MatchService._key_cooldowns[api_key] = time.time() + reset_time
-                    
-                    # Try next key immediately
                     MatchService._rotate_key()
                     attempt += 1
                     continue
-                
+
                 response.raise_for_status()
-                
-                # Success - cache and return
+
+                # ── Success: reset circuit, cache and return ──
+                _circuit_open_until = 0
                 data = response.json()
                 MatchService._cache[cache_key] = (time.time(), data)
-                
-                # Cleanup cache
+
                 if len(MatchService._cache) > 500:
-                    oldest = min(MatchService._cache.keys(), key=lambda k: MatchService._cache[k][0])
+                    oldest = min(MatchService._cache, key=lambda k: MatchService._cache[k][0])
                     del MatchService._cache[oldest]
-                    
+
                 return data
-                
+
+            except (ReqConnectionError, ReqTimeout) as e:
+                # ── Network / DNS error: open circuit, log ONCE, bail out fast ──
+                _circuit_open_until = time.time() + CIRCUIT_BACKOFF_SECONDS
+                logger.error(
+                    f"Football API unreachable – circuit opened for {CIRCUIT_BACKOFF_SECONDS}s. "
+                    f"Error: {type(e).__name__}. Requests will be silenced until network recovers."
+                )
+                return MatchService._get_empty_response(endpoint)
+
             except requests.exceptions.RequestException as e:
-                logger.error(f"Football API Error (Key {MatchService._current_key_idx}): {e}")
+                # ── Other HTTP errors (4xx/5xx): log and try next key ──
+                logger.warning(
+                    f"Football API error on key index {MatchService._current_key_idx}: "
+                    f"{type(e).__name__} – {e}"
+                )
                 if attempt < retries - 1:
                     MatchService._rotate_key()
                     attempt += 1
-                    time.sleep(1)
+                    time.sleep(min(2 ** attempt, 8))  # exponential backoff, max 8s
                     continue
                 return MatchService._get_empty_response(endpoint)
-                
+
         return MatchService._get_empty_response(endpoint)
             
     @staticmethod
@@ -306,6 +334,34 @@ class MatchService:
     @staticmethod
     def get_team_matches(team_id, **params):
         return MatchService._make_request(f"/teams/{team_id}/matches", params)
+
+    @staticmethod
+    def get_team_profile_by_name(team_name):
+        """Return API-backed club metadata, including crest, for a known club name."""
+        if not team_name:
+            return None
+
+        team_id = MatchService._find_team_id(team_name)
+        if not team_id:
+            return {"id": None, "name": team_name, "shortName": team_name, "tla": None, "crest": None}
+
+        cache_key = f"profile_{team_id}"
+        now = time.time()
+        if cache_key in MatchService._team_profile_cache:
+            cache_time, cached = MatchService._team_profile_cache[cache_key]
+            if now - cache_time < 86400:
+                return cached
+
+        data = MatchService._make_request(f"/teams/{team_id}")
+        profile = {
+            "id": data.get("id") or team_id,
+            "name": data.get("name") or team_name,
+            "shortName": data.get("shortName") or data.get("name") or team_name,
+            "tla": data.get("tla"),
+            "crest": data.get("crest"),
+        }
+        MatchService._team_profile_cache[cache_key] = (now, profile)
+        return profile
 
     @staticmethod
     def _find_team_id(name):

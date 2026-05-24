@@ -171,7 +171,9 @@ const LiveScores = () => {
             </div>
           ) : matchError ? (
             <div className="neu-card bg-red-100 text-center py-16">
-              <p className="font-archivo text-3xl mb-6 text-red-800 uppercase">⚠️ {matchError}</p>
+              <p className="font-archivo text-3xl mb-6 text-red-800 uppercase flex items-center justify-center gap-3">
+                <AlertTriangle size={32} /> {matchError}
+              </p>
               <button className="neu-button bg-red-500 text-white" onClick={fetchMatchesForDate}>
                 TRY AGAIN
               </button>

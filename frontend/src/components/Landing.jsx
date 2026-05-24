@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { communityAPI } from '../services/api';
+import { communityAPI, newsAPI } from '../services/api';
 import AppHeader from './AppHeader';
 import { motion } from 'framer-motion';
-import { MessageSquare, BarChart2, Bot, Shield, Users, Zap, Activity, ArrowRight, Star, Ticket } from 'lucide-react';
+import { MessageSquare, BarChart2, Bot, Shield, Users, Zap, Activity, ArrowRight, Star, Ticket, CircleDot, Flame } from 'lucide-react';
 
 const features = [
   { icon: MessageSquare, title: 'Live Fan Chat',    desc: 'Join thousands of fans in real-time during the match. React. Argue. Celebrate.', rotate: '-2deg', color: '#ff3b30' },
@@ -57,6 +57,7 @@ const Marquee = () => (
 
 const Landing = () => {
   const [communities, setCommunities] = useState([]);
+  const [globalNews, setGlobalNews] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,6 +68,15 @@ const Landing = () => {
         }
       })
       .catch(err => console.error('Landing communities fetch error:', err));
+
+    newsAPI.getGlobalNews(6)
+      .then(r => {
+        if (isMounted && r.data && r.data.articles) {
+          setGlobalNews(r.data.articles);
+        }
+      })
+      .catch(err => console.error('Landing news fetch error:', err));
+
     return () => { isMounted = false; };
   }, []);
 
@@ -100,7 +110,7 @@ const Landing = () => {
               transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
               className="comic-sticker rotate-[-3deg] text-sm md:text-lg px-6 py-2 shadow-[4px_4px_0_0_#000]"
             >
-              {'⚽ MATCHDAY LIVE'}
+              <CircleDot size={18} className="inline-block mr-2 align-[-2px]" /> {'MATCHDAY LIVE'}
             </motion.span>
             <motion.span 
               animate={{ y: [0, 10, 0] }}
@@ -183,6 +193,115 @@ const Landing = () => {
           </div>
         </section>
       )}
+
+      {/* ── WORLD CUP FOOTBALL TELEGRAPH (Aggregate Global News) ── */}
+      <section className="py-24 px-6 border-b-4 border-black bg-[#f4f1ea] text-black">
+        <div className="max-w-7xl mx-auto">
+          {/* Newspaper Header */}
+          <div className="text-center border-b-8 double border-black pb-8 mb-12">
+            <p className="font-inter font-black text-xs md:text-sm tracking-[0.25em] uppercase mb-2 text-black/70">
+              <Zap size={14} className="inline-block mr-2 align-[-2px]" /> DAILY BANTER & MATCHDAY CHRONICLES <Zap size={14} className="inline-block ml-2 align-[-2px]" />
+            </p>
+            <h2 className="font-archivo text-5xl md:text-8xl tracking-tight leading-none uppercase my-2 font-black border-y-4 border-black py-4 select-none">
+              WORLD CUP FOOTBALL TELEGRAPH
+            </h2>
+            <div className="flex justify-between items-center mt-3 font-archivo text-xs md:text-sm uppercase font-bold tracking-wider px-2 text-black/60">
+              <span>VOL. XCIV... NO. 302</span>
+              <span>LONDON, PARIS, MADRID</span>
+              <span>PRICE £0.50 / FREE STICKER INSIDE!</span>
+            </div>
+          </div>
+
+          {/* Newspaper Grid */}
+          {globalNews.length === 0 ? (
+            <div className="border-4 border-dashed border-black p-12 text-center bg-white shadow-[6px_6px_0_0_#000]">
+              <p className="font-archivo text-xl uppercase font-black">STOP THE PRESSES!</p>
+              <p className="font-inter font-bold text-black/60 mt-2">No news stories are currently cached. The presses will roll shortly!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Headline Article (Spans 2 columns on desktop) */}
+              <div className="lg:col-span-2">
+                {globalNews[0] && (
+                  <a 
+                    href={globalNews[0].article_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="group border-4 border-black bg-white p-6 block no-underline text-black transition-all duration-300 hover:translate-y-[-4px] hover:shadow-[10px_10px_0_0_#000]"
+                    style={{ boxShadow: '8px 8px 0px 0px #000' }}
+                  >
+                    {globalNews[0].image_url && (
+                      <div className="border-4 border-black overflow-hidden mb-6 h-64 md:h-96 relative">
+                        <img 
+                          src={globalNews[0].image_url} 
+                          alt={globalNews[0].title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter contrast-[1.05]"
+                        />
+                        <span className="absolute top-4 left-4 bg-yellow-300 text-black border-2 border-black font-archivo text-xs uppercase px-3 py-1 font-bold shadow-[2px_2px_0_0_#000]">
+                          <Flame size={14} className="inline-block mr-1 align-[-2px]" /> HEADLINE NEWS
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex gap-2 mb-3">
+                      <span className="bg-black text-white font-archivo text-xs uppercase px-2.5 py-1 font-bold tracking-wider">
+                        {globalNews[0].source_name || 'TELEGRAPH SPECIAL'}
+                      </span>
+                      <span className="bg-red-500 text-white font-archivo text-xs uppercase px-2.5 py-1 font-bold tracking-wider">
+                        {globalNews[0].club_name.toUpperCase()}
+                      </span>
+                    </div>
+                    <h3 className="font-archivo text-3xl md:text-5xl uppercase font-black mb-4 leading-tight group-hover:text-[var(--accent-primary)] transition-colors">
+                      {globalNews[0].title}
+                    </h3>
+                    <p className="font-inter font-bold text-black/75 text-sm md:text-base leading-relaxed mb-6">
+                      {globalNews[0].description}
+                    </p>
+                    <div className="flex justify-between items-center border-t-2 border-black pt-4 font-archivo text-xs md:text-sm font-black uppercase text-black/70">
+                      <span className="text-[var(--accent-primary)] group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">READ FULL ARTICLE <ArrowRight size={14} /></span>
+                      <span>
+                        PUBLISHED: {new Date(globalNews[0].published_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </a>
+                )}
+              </div>
+
+              {/* Sidebar list of articles */}
+              <div className="flex flex-col gap-8">
+                {globalNews.slice(1, 4).map((article, idx) => (
+                  <a 
+                    key={article.news_id || idx}
+                    href={article.article_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group border-4 border-black bg-white p-5 block no-underline text-black transition-all duration-300 hover:translate-y-[-4px] hover:shadow-[8px_8px_0_0_#000]"
+                    style={{ boxShadow: '6px 6px 0px 0px #000' }}
+                  >
+                    <div className="flex gap-2 mb-2">
+                      <span className="bg-yellow-400 text-black border border-black font-archivo text-[10px] uppercase px-2 py-0.5 font-bold tracking-wider">
+                        {article.source_name || 'FOOTBALL DAILY'}
+                      </span>
+                      <span className="bg-blue-400 text-white border border-black font-archivo text-[10px] uppercase px-2 py-0.5 font-bold tracking-wider">
+                        {article.club_name.toUpperCase()}
+                      </span>
+                    </div>
+                    <h4 className="font-archivo text-xl uppercase font-black mb-2 leading-tight group-hover:text-[var(--accent-primary)] transition-colors">
+                      {article.title}
+                    </h4>
+                    <p className="font-inter text-xs font-bold text-black/70 mb-4 line-clamp-3">
+                      {article.description}
+                    </p>
+                    <div className="flex justify-between items-center border-t border-black/20 pt-3 font-archivo text-[10px] uppercase font-bold text-black/50">
+                      <span className="inline-flex items-center gap-1">READ MORE <ArrowRight size={12} /></span>
+                      <span>{new Date(article.published_at).toLocaleDateString()}</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* ── CTA ── */}
       <section className="py-32 px-6 bg-black text-white text-center relative overflow-hidden group">
