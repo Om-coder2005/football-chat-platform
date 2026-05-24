@@ -271,3 +271,150 @@ class CommunityController:
                 return jsonify({'success': True, 'summary': summary}), 200
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)}), 500
+
+    @staticmethod
+    @jwt_required()
+    def mute_member(community_id, member_user_id):
+        """Mute a community member (admin/moderator only)"""
+        try:
+            data = get_json_payload() or {}
+            duration = data.get('duration', 10)
+            try:
+                duration = int(duration)
+            except ValueError:
+                duration = 10
+
+            user_id = int(get_jwt_identity())
+            with db_session() as db:
+                success, msg, status_code = CommunityService.mute_member(
+                    db=db,
+                    community_id=community_id,
+                    actor_user_id=user_id,
+                    target_user_id=member_user_id,
+                    duration_minutes=duration
+                )
+                return jsonify({'success': success, 'message': msg}), status_code
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+    @staticmethod
+    @jwt_required()
+    def warn_member(community_id, member_user_id):
+        """Warn a community member (admin/moderator only). Automute on 3 warnings."""
+        try:
+            user_id = int(get_jwt_identity())
+            with db_session() as db:
+                success, msg, status_code, muted = CommunityService.warn_member(
+                    db=db,
+                    community_id=community_id,
+                    actor_user_id=user_id,
+                    target_user_id=member_user_id
+                )
+                return jsonify({'success': success, 'message': msg, 'muted': muted}), status_code
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+    @staticmethod
+    @jwt_required()
+    def ban_member(community_id, member_user_id):
+        """Ban a community member (admin/moderator only)"""
+        try:
+            data = get_json_payload() or {}
+            reason = data.get('reason', '')
+            user_id = int(get_jwt_identity())
+            with db_session() as db:
+                success, msg, status_code = CommunityService.ban_member(
+                    db=db,
+                    community_id=community_id,
+                    actor_user_id=user_id,
+                    target_user_id=member_user_id,
+                    reason=reason
+                )
+                return jsonify({'success': success, 'message': msg}), status_code
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+    @staticmethod
+    @jwt_required()
+    def get_tactic_board(community_id):
+        """Get or create the tactical board state for a community"""
+        try:
+            from src.db.models.new_models import TacticBoard
+            import json
+            
+            user_id = int(get_jwt_identity())
+            with db_session() as db:
+                if not CommunityService.is_member(db, user_id, community_id):
+                    return jsonify({
+                        'success': False,
+                        'message': 'You must be a member to access the tactic board'
+                    }), 403
+
+                tactic_board = db.query(TacticBoard).filter(TacticBoard.community_id == community_id).first()
+                if not tactic_board:
+                    # Create default board state
+                    default_state = json.dumps({"tokens": [], "drawings": []})
+                    tactic_board = TacticBoard(community_id=community_id, board_state=default_state)
+                    db.add(tactic_board)
+                    db.commit()
+                    db.refresh(tactic_board)
+
+                return jsonify({
+                    'success': True,
+                    'tactic_board': tactic_board.to_dict()
+                }), 200
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error: {str(e)}'
+            }), 500
+
+    @staticmethod
+    @jwt_required()
+    def save_tactic_board(community_id):
+        """Save the tactical board state for a community"""
+        try:
+            from src.db.models.new_models import TacticBoard
+            import json
+            
+            data = get_json_payload()
+            board_state = data.get('board_state')
+            if board_state is None:
+                return jsonify({
+                    'success': False,
+                    'message': 'board_state is required'
+                }), 400
+                
+            if not isinstance(board_state, str):
+                board_state_str = json.dumps(board_state)
+            else:
+                board_state_str = board_state
+
+            user_id = int(get_jwt_identity())
+            with db_session() as db:
+                if not CommunityService.is_member(db, user_id, community_id):
+                    return jsonify({
+                        'success': False,
+                        'message': 'You must be a member to access the tactic board'
+                    }), 403
+
+                tactic_board = db.query(TacticBoard).filter(TacticBoard.community_id == community_id).first()
+                if not tactic_board:
+                    tactic_board = TacticBoard(community_id=community_id, board_state=board_state_str)
+                    db.add(tactic_board)
+                else:
+                    tactic_board.board_state = board_state_str
+                
+                db.commit()
+                db.refresh(tactic_board)
+
+                return jsonify({
+                    'success': True,
+                    'message': 'Tactic board saved successfully',
+                    'tactic_board': tactic_board.to_dict()
+                }), 200
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error: {str(e)}'
+            }), 500

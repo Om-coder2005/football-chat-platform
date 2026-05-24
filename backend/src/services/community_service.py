@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from src.db.models.community import Community
 from src.db.models.community_member import CommunityMember
 from src.db.models.user import User
+from src.db.models.new_models import CommunityBan
 
 class CommunityService:
     VALID_ROLES = {'member', 'moderator', 'admin'}
@@ -53,6 +54,14 @@ class CommunityService:
     @staticmethod
     def join_community(db: Session, community_id, user_id):
         """Add user to community"""
+        # Check if user is banned
+        ban = db.query(CommunityBan).filter_by(
+            community_id=community_id,
+            user_id=user_id
+        ).first()
+        if ban:
+            return False, f"You are banned from this community. Reason: {ban.reason or 'No reason provided'}"
+
         # Check if already a member
         existing = db.query(CommunityMember).filter_by(
             user_id=user_id,
@@ -122,7 +131,7 @@ class CommunityService:
             .all()
         )
         return [m.community for m in memberships]
-
+ 
     @staticmethod
     def get_community_members(db: Session, community_id):
         """Get members of a community with public profile and role details"""
@@ -143,6 +152,8 @@ class CommunityService:
                 "favorite_club": membership.user.favorite_club,
                 "role": membership.role,
                 "joined_at": membership.joined_at.isoformat() if membership.joined_at else None,
+                "muted_until": membership.muted_until.isoformat() if membership.muted_until else None,
+                "warnings_count": membership.warnings_count or 0
             })
 
         return members
@@ -234,6 +245,14 @@ class CommunityService:
         if not target_user:
             return False, "User not found", 404
 
+        # Check if banned
+        ban = db.query(CommunityBan).filter_by(
+            community_id=community_id,
+            user_id=target_user.id
+        ).first()
+        if ban:
+            return False, f"User is banned from this community. Reason: {ban.reason or 'No reason provided'}", 400
+
         # Check if already a member
         existing = CommunityService.get_membership(db, target_user.id, community_id)
         if existing:
@@ -289,3 +308,102 @@ class CommunityService:
         except Exception as e:
             db.rollback()
             return False, f"Error removing member: {str(e)}", 500
+
+    @staticmethod
+    def mute_member(db: Session, community_id, actor_user_id, target_user_id, duration_minutes=10):
+        """Mute a member in a community (admin/moderator only)"""
+        actor_membership = CommunityService.get_membership(db, actor_user_id, community_id)
+        if not actor_membership or actor_membership.role not in ('admin', 'moderator'):
+            return False, "Only admins and moderators can mute members", 403
+
+        target_membership = CommunityService.get_membership(db, target_user_id, community_id)
+        if not target_membership:
+            return False, "Target user is not a member of this community", 404
+
+        # Hierarchy check
+        role_weights = {'admin': 3, 'moderator': 2, 'member': 1}
+        if role_weights.get(actor_membership.role, 0) <= role_weights.get(target_membership.role, 0):
+            return False, "You do not have permission to moderate this user due to role hierarchy", 403
+
+        from datetime import datetime, timedelta
+        try:
+            target_membership.muted_until = datetime.utcnow() + timedelta(minutes=duration_minutes)
+            db.commit()
+            return True, f"User muted successfully for {duration_minutes} minutes", 200
+        except Exception as e:
+            db.rollback()
+            return False, f"Error muting user: {str(e)}", 500
+
+    @staticmethod
+    def warn_member(db: Session, community_id, actor_user_id, target_user_id):
+        """Warn a member in a community (admin/moderator only). Automute on 3 warnings."""
+        actor_membership = CommunityService.get_membership(db, actor_user_id, community_id)
+        if not actor_membership or actor_membership.role not in ('admin', 'moderator'):
+            return False, "Only admins and moderators can warn members", 403, False
+
+        target_membership = CommunityService.get_membership(db, target_user_id, community_id)
+        if not target_membership:
+            return False, "Target user is not a member of this community", 404, False
+
+        # Hierarchy check
+        role_weights = {'admin': 3, 'moderator': 2, 'member': 1}
+        if role_weights.get(actor_membership.role, 0) <= role_weights.get(target_membership.role, 0):
+            return False, "You do not have permission to moderate this user due to role hierarchy", 403, False
+
+        from datetime import datetime, timedelta
+        try:
+            target_membership.warnings_count = (target_membership.warnings_count or 0) + 1
+            muted = False
+            if target_membership.warnings_count >= 3:
+                target_membership.muted_until = datetime.utcnow() + timedelta(hours=24)
+                target_membership.warnings_count = 0  # Reset
+                muted = True
+                msg = "User warned. Warning count hit 3; automatically muted for 24 hours."
+            else:
+                msg = f"User warned successfully. Warnings count: {target_membership.warnings_count}/3"
+            
+            db.commit()
+            return True, msg, 200, muted
+        except Exception as e:
+            db.rollback()
+            return False, f"Error warning user: {str(e)}", 500, False
+
+    @staticmethod
+    def ban_member(db: Session, community_id, actor_user_id, target_user_id, reason=None):
+        """Ban a member from a community (admin/moderator only)"""
+        actor_membership = CommunityService.get_membership(db, actor_user_id, community_id)
+        if not actor_membership or actor_membership.role not in ('admin', 'moderator'):
+            return False, "Only admins and moderators can ban members", 403
+
+        target_membership = CommunityService.get_membership(db, target_user_id, community_id)
+        if not target_membership:
+            return False, "Target user is not a member of this community", 404
+
+        # Hierarchy check
+        role_weights = {'admin': 3, 'moderator': 2, 'member': 1}
+        if role_weights.get(actor_membership.role, 0) <= role_weights.get(target_membership.role, 0):
+            return False, "You do not have permission to moderate this user due to role hierarchy", 403
+
+        try:
+            # Create ban entry
+            ban = CommunityBan(
+                community_id=community_id,
+                user_id=target_user_id,
+                banned_by=actor_user_id,
+                reason=reason
+            )
+            db.add(ban)
+            
+            # Delete membership
+            db.delete(target_membership)
+            
+            # Decrement member count
+            community = db.get(Community, community_id)
+            if community and community.member_count > 0:
+                community.member_count -= 1
+
+            db.commit()
+            return True, "User banned successfully", 200
+        except Exception as e:
+            db.rollback()
+            return False, f"Error banning user: {str(e)}", 500

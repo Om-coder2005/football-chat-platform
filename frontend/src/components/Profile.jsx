@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { authAPI } from '../services/api';
 import AppHeader from './AppHeader';
+import { AlertTriangle, BadgeCheck, CircleDot } from 'lucide-react';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -13,6 +14,8 @@ const Profile = () => {
   const navigate = useNavigate();
 
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [headerUrl, setHeaderUrl] = useState('');
   const [bio, setBio] = useState('');
   const [favoriteClub, setFavoriteClub] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -25,6 +28,8 @@ const Profile = () => {
         if (response.data.success) {
           setUser(response.data.user);
           setAvatarUrl(response.data.user.avatar_url || '');
+          setDisplayName(response.data.user.display_name || '');
+          setHeaderUrl(response.data.user.header_url || '');
           setBio(response.data.user.bio || '');
           setFavoriteClub(response.data.user.favorite_club || '');
           localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -45,7 +50,13 @@ const Profile = () => {
     setError('');
     setSuccess('');
     try {
-      const updateData = { avatar_url: avatarUrl, bio, favorite_club: favoriteClub };
+      const updateData = { 
+        avatar_url: avatarUrl, 
+        bio, 
+        favorite_club: favoriteClub,
+        display_name: displayName,
+        header_url: headerUrl
+      };
       if (newPassword) {
         if (!currentPassword) {
           setError('Current password is required to set a new password.');
@@ -59,6 +70,8 @@ const Profile = () => {
       if (response.data.success) {
         setSuccess('Profile updated successfully!');
         setUser(response.data.user);
+        setDisplayName(response.data.user.display_name || '');
+        setHeaderUrl(response.data.user.header_url || '');
         localStorage.setItem('user', JSON.stringify(response.data.user));
         setCurrentPassword('');
         setNewPassword('');
@@ -107,32 +120,43 @@ const Profile = () => {
           <div className="md:col-span-1 flex flex-col gap-6">
             {/* Avatar Card */}
             <div className="neu-card bg-white overflow-hidden relative">
-              <div className="h-24 bg-black flex items-center justify-center relative">
-                <span className="font-bebas text-5xl text-yellow-400 tracking-widest drop-shadow-[2px_2px_0px_#fff]">CASA ULTRAS</span>
+              <div 
+                className="h-32 bg-black flex items-center justify-center relative overflow-hidden bg-cover bg-center border-b-4 border-black"
+                style={{ backgroundImage: headerUrl ? `url(${headerUrl})` : 'none' }}
+              >
+                {!headerUrl && (
+                  <span className="font-bebas text-5xl text-yellow-400 tracking-widest drop-shadow-[2px_2px_0px_#fff]">CASA ULTRAS</span>
+                )}
+                {headerUrl && (
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px] flex items-center justify-center">
+                    <span className="font-bebas text-4xl text-white tracking-widest drop-shadow-[2px_2px_0px_#000]">CASA ULTRAS</span>
+                  </div>
+                )}
               </div>
               <div className="px-6 pb-6 relative">
-                <div className="flex justify-center -mt-12 mb-4">
+                <div className="flex justify-center -mt-14 mb-4">
                   <div className="relative">
                     <img
                       src={profileImage}
                       alt={user?.username}
-                      className="w-24 h-24 object-cover border-4 border-black shadow-[6px_6px_0px_0px_#000]"
+                      className="w-28 h-28 object-cover border-4 border-black bg-white shadow-[6px_6px_0px_0px_#000]"
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = `https://ui-avatars.com/api/?name=${user?.username}&background=ff3b30&color=fff&size=150&bold=true`;
                       }}
                     />
                     {user?.is_active && (
-                      <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-black"></span>
+                      <span className="absolute bottom-1 right-1 w-6 h-6 bg-green-500 border-4 border-black rounded-full"></span>
                     )}
                   </div>
                 </div>
                 <div className="text-center">
-                  <h2 className="font-archivo text-2xl uppercase">@{user?.username}</h2>
+                  <h2 className="font-archivo text-2xl uppercase">{displayName || user?.username}</h2>
+                  {displayName && <p className="font-poppins font-bold text-gray-500 text-sm mb-1">@{user?.username}</p>}
                   <p className="font-poppins font-bold text-gray-600 text-sm mb-3">{user?.email}</p>
                   {user?.favorite_club && (
                     <div className="inline-block bg-yellow-300 border-4 border-black px-3 py-1 font-archivo text-sm uppercase shadow-[4px_4px_0px_0px_#000] rotate-1 mb-3">
-                      ⚽ {user.favorite_club}
+                      <span className="inline-flex items-center gap-2"><CircleDot size={16} /> {user.favorite_club}</span>
                     </div>
                   )}
                   {user?.bio && (
@@ -197,16 +221,40 @@ const Profile = () => {
 
               {error && (
                 <div className="bg-red-500 text-white font-poppins font-bold border-4 border-black p-3 mb-6 shadow-[4px_4px_0px_0px_#000]">
-                  ⚠️ {error}
+                  <span className="inline-flex items-center gap-2"><AlertTriangle size={18} /> {error}</span>
                 </div>
               )}
               {success && (
                 <div className="bg-green-400 text-black font-poppins font-bold border-4 border-black p-3 mb-6 shadow-[4px_4px_0px_0px_#000]">
-                  ✅ {success}
+                  <span className="inline-flex items-center gap-2"><BadgeCheck size={18} /> {success}</span>
                 </div>
               )}
 
               <form onSubmit={handleUpdate} className="flex flex-col gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-2">
+                    <label className="font-archivo uppercase tracking-wider text-black">Display Name</label>
+                    <input
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="e.g. El Chiringuito"
+                      className="neu-input"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-archivo uppercase tracking-wider text-black">Header Image URL (Optional)</label>
+                    <input
+                      type="url"
+                      value={headerUrl}
+                      onChange={(e) => setHeaderUrl(e.target.value)}
+                      placeholder="https://example.com/banner.jpg"
+                      className="neu-input"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-2">
                   <label className="font-archivo uppercase tracking-wider text-black">Avatar URL (Optional)</label>
                   <input

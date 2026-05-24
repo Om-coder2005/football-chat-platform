@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { matchAPI } from '../services/api';
 import { formatTime, getStatusLabel, getStatusColor } from '../utils/formatters';
 import AppHeader from './AppHeader';
+import { CircleDot } from 'lucide-react';
 
 const STATUS_FILTERS = [
   { key: 'all', label: 'ALL' },
@@ -140,7 +141,7 @@ const LeagueMatches = () => {
 
             {filteredMatches.length === 0 ? (
               <div className="neu-card bg-yellow-100 text-center py-20 border-4 border-black shadow-[8px_8px_0px_0px_#000] rotate-1">
-                <p className="text-7xl mb-6">⚽</p>
+                <CircleDot size={72} className="mx-auto mb-6 text-black" />
                 <p className="font-archivo text-4xl uppercase">No Matches Found</p>
               </div>
             ) : (

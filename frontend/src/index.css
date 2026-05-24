@@ -110,23 +110,27 @@ body.theme-liverpool {
 /* =====================================================
    BASE
    ===================================================== */
-*, *::before, *::after { box-sizing: border-box; }
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
 
-body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.5;
-  overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.5;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Ensure all text elements inherit the primary text color by default */
+  h1, h2, h3, h4, h5, h6, p, span, b, i, strong, em, label {
+    color: inherit;
+  }
+  
+  html, body, #root { min-height: 100%; }
+  a { color: inherit; }
 }
 
-/* Ensure all text elements inherit the primary text color by default */
-h1, h2, h3, h4, h5, h6, p, span, b, i, strong, em, label {
-  color: inherit;
-}
-html, body, #root { min-height: 100%; }
-a { color: inherit; }
 button { font-family: inherit; }
 
 /* =====================================================
@@ -300,3 +304,85 @@ button { font-family: inherit; }
 .text-theme-secondary { color: var(--text-secondary) !important; }
 .bg-theme-card        { background: var(--card-bg) !important; }
 .border-theme         { border-color: var(--border-color) !important; }
+
+/* =====================================================
+   TOAST NOTIFICATIONS
+   ===================================================== */
+.toast-viewport {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(380px, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.toast-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 4px solid var(--border-color);
+  box-shadow: 6px 6px 0 var(--shadow-color);
+  padding: 0.85rem 0.85rem 0.85rem 1rem;
+  font-family: var(--font-poppins);
+  pointer-events: auto;
+}
+
+.toast-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  border-right: 3px solid var(--border-color);
+}
+
+.toast-icon {
+  margin-left: 0.5rem;
+  color: var(--text-primary);
+}
+
+.toast-body {
+  min-width: 0;
+}
+
+.toast-title {
+  font-family: var(--font-archivo);
+  font-size: 0.75rem;
+  line-height: 1;
+  text-transform: uppercase;
+  margin: 0 0 0.25rem;
+}
+
+.toast-message {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.toast-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  background: white;
+  color: black;
+  border: 2px solid black;
+  box-shadow: 2px 2px 0 black;
+  cursor: pointer;
+}
+
+.toast-close:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 black;
+}

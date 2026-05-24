@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from src.db.models.user import Base
@@ -13,6 +13,7 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     is_highlighted = Column(DateTime, nullable=True) # Store timestamp of highlight, or null if not highlighted
+    is_pinned = Column(Boolean, default=False)
     media_url = Column(Text, nullable=True)
     media_description = Column(Text, nullable=True)
     
@@ -29,6 +30,7 @@ class Message(Base):
             'avatar_url': self.user.avatar_url if self.user else None,
             'community_id': self.community_id,
             'is_highlighted': self.is_highlighted.isoformat() if self.is_highlighted else None,
+            'is_pinned': self.is_pinned,
             'media_url': self.media_url,
             'media_description': self.media_description,
             'created_at': self.created_at.isoformat() if self.created_at else None

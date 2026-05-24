@@ -134,6 +134,26 @@ class MessageController:
 
     @staticmethod
     @jwt_required()
+    def toggle_pin(message_id):
+        """Toggle message pin (admin/moderator only)"""
+        try:
+            user_id = int(get_jwt_identity())
+            with db_session() as db:
+                success, msg, status_code, message = MessageService.toggle_pin(db, message_id, user_id)
+
+                return jsonify({
+                    'success': success,
+                    'message': msg,
+                    'pinned_message': message.to_dict() if message else None
+                }), status_code
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error pinning message: {str(e)}'
+            }), 500
+
+    @staticmethod
+    @jwt_required()
     def send_notification(community_id):
         """Send a notification to the chat (admin only)"""
         try:

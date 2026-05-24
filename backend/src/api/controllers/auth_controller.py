@@ -160,7 +160,20 @@ class AuthController:
                 if not user:
                     return jsonify({'success': False, 'message': 'User not found'}), 404
 
-                # Update fields
+                # Validate and update display_name
+                if 'display_name' in data:
+                    display_name = data['display_name']
+                    if display_name and len(display_name) > 100:
+                        return jsonify({'success': False, 'message': 'Display name must be 100 characters or less'}), 400
+                    user.display_name = display_name
+
+                # Validate and update header_url
+                if 'header_url' in data:
+                    header_url = data['header_url']
+                    # Optional basic format check or length constraint
+                    user.header_url = header_url
+
+                # Update other fields
                 if 'avatar_url' in data: user.avatar_url = data['avatar_url']
                 if 'bio' in data: user.bio = data['bio']
                 if 'favorite_club' in data: user.favorite_club = data['favorite_club']

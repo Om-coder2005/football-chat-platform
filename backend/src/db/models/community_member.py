@@ -11,6 +11,8 @@ class CommunityMember(Base):
     community_id = Column(Integer, ForeignKey('communities.id'), nullable=False)
     role = Column(String(20), default='member')
     joined_at = Column(DateTime, default=datetime.utcnow)
+    muted_until = Column(DateTime, nullable=True)
+    warnings_count = Column(Integer, default=0)
     
     # Relationships
     user = relationship('User', back_populates='memberships')

@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask_bcrypt import Bcrypt
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
@@ -16,6 +16,8 @@ class User(Base):
     avatar_url = Column(String(255), nullable=True)
     bio = Column(String(255), nullable=True)
     favorite_club = Column(String(100), nullable=True)
+    display_name = Column(String(100), nullable=True)
+    header_url = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     is_banned = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -42,6 +44,8 @@ class User(Base):
             'avatar_url': self.avatar_url,
             'bio': self.bio,
             'favorite_club': self.favorite_club,
+            'display_name': self.display_name,
+            'header_url': self.header_url,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }

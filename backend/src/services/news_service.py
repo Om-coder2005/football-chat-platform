@@ -167,3 +167,10 @@ class NewsService:
             
         articles = db.query(ClubNews).filter_by(club_name=matched_club).order_by(ClubNews.published_at.desc()).limit(limit).all()
         return [article.to_dict() for article in articles]
+
+    @staticmethod
+    def get_global_news(db: Session, limit=30):
+        """Retrieve latest cached news across all clubs, sorted chronologically."""
+        articles = db.query(ClubNews).order_by(ClubNews.published_at.desc()).limit(limit).all()
+        return [article.to_dict() for article in articles]
+
