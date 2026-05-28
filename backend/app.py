@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from flask_jwt_extended import JWTManager, decode_token
 from flask_cors import CORS
@@ -316,7 +316,7 @@ def handle_message(data):
                 else:
                     try:
                         # Very simple moderation/description using Gemini
-                        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", ""))
+                        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", "").split(",")[0].strip())
                         prompt = f"Please describe this image in one short sentence for visually impaired fans: {media_url}"
                         from google.genai import types
                         response = client.models.generate_content(
@@ -693,6 +693,8 @@ def handle_leave_rivalry(data):
     except Exception as e:
         print(f"Leave rivalry error: {str(e)}")
 
+rivalry_warnings = {}
+
 @socketio.on("send_rivalry_message")
 def handle_send_rivalry_message(data):
     """
@@ -722,11 +724,71 @@ def handle_send_rivalry_message(data):
                 emit("error", {"message": "Unauthorized"})
                 return
             
-            user_payload = {
-                "id": user.id,
-                "username": user.username,
-                "avatar_url": user.avatar_url,
-            }
+            # Check Red Card State
+            room_id_str = str(room_id)
+            if room_id_str not in rivalry_warnings:
+                rivalry_warnings[room_id_str] = {}
+            if rivalry_warnings[room_id_str].get(user_id, 0) >= 3:
+                emit("ban_alert", {"message": "RED CARD: You are banned from this Arena."}, to=request.sid)
+                return
+
+            content_stripped = content.strip()
+            
+            # 1. AI Slash Commands (Copilot)
+            if content_stripped.startswith('/banter') or content_stripped.startswith('/stat'):
+                command = content_stripped.split(" ", 1)
+                query = command[1] if len(command) > 1 else ""
+                
+                try:
+                    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", "").split(",")[0].strip())
+                    if content_stripped.startswith('/banter'):
+                        prompt = f"Generate a short, witty, clean football banter line (max 150 chars) from a {team_affinity} fan's perspective about {query if query else 'the rivalry match'}."
+                    else:
+                        prompt = f"Provide one short, interesting football stat (max 150 chars) related to {query if query else 'this derby match'}."
+                    
+                    from google.genai import types
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            safety_settings=[
+                                types.SafetySetting(category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH),
+                                types.SafetySetting(category=types.HarmCategory.HARM_CATEGORY_HARASSMENT, threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH)
+                            ]
+                        )
+                    )
+                    content = "[COPILOT] " + response.text.strip()
+                except Exception as e:
+                    emit("error", {"message": "AI Copilot failed to generate response."})
+                    return
+            else:
+                # 2. AI Respect Filter (Toxicity Check)
+                try:
+                    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", "").split(",")[0].strip())
+                    prompt = f"Analyze this message for extreme toxicity, racism, or severe abuse in a football fan context. Is it highly toxic? Answer YES or NO.\n\nMessage: '{content_stripped}'"
+                    from google.genai import types
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            safety_settings=[
+                                types.SafetySetting(category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH),
+                                types.SafetySetting(category=types.HarmCategory.HARM_CATEGORY_HARASSMENT, threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH)
+                            ]
+                        )
+                    )
+                    if response.text.strip().upper().startswith("YES"):
+                        warnings = rivalry_warnings[room_id_str].get(user_id, 0) + 1
+                        rivalry_warnings[room_id_str][user_id] = warnings
+                        
+                        if warnings >= 3:
+                            emit("ban_alert", {"message": "RED CARD: You have been temporarily banned from this Arena for toxic behavior."}, to=request.sid)
+                        else:
+                            emit("warning_alert", {"message": f"YELLOW CARD: Warning {warnings}/3. Keep the banter respectful!"}, to=request.sid)
+                        return
+                except Exception as e:
+                    print(f"Respect Filter error: {e}")
+                    pass
             
             # Persist rivalry message
             msg = RivalryMessage(
@@ -759,7 +821,6 @@ def handle_send_rivalry_message(data):
             emit("goal_alert", {
                 "scorer": scorer,
                 "team_name": team_name
-                # Note: We send to room_name, and broadcast=True
             }, to=room_name, broadcast=True)
 
         print(f"Rivalry message saved and broadcasted to {room_name}")

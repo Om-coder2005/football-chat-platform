@@ -178,8 +178,13 @@ class AIStatsService:
         """
         ck = AIStatsService._cache_key(home_team, away_team, match_date, "scorers")
         if ck in _scorers_cache:
-            logger.info("Scorer cache hit: %s vs %s", home_team, away_team)
-            return _scorers_cache[ck]
+            entry = _scorers_cache[ck]
+            if isinstance(entry, dict) and entry.get("_cooldown_until"):
+                if time.time() < entry["_cooldown_until"]:
+                    return None
+            else:
+                logger.info("Scorer cache hit: %s vs %s", home_team, away_team)
+                return entry
 
         if not AIStatsService._available_keys():
             logger.info("No available Gemini keys – skipping scorer lookup")
@@ -203,8 +208,13 @@ class AIStatsService:
             '{"name":"<name>","number":<int>,"position":"GK/DF/MF/FW"}]}}}'
         )
 
-        raw  = AIStatsService._gemini_call(prompt, use_search=True)
-        data = AIStatsService._parse_json(raw)
+        raw_text = AIStatsService._gemini_call(prompt, use_search=True)
+        if not raw_text:
+            logger.error("Gemini scorers fetch failed: %s", raw_text)
+            _scorers_cache[ck] = {"_cooldown_until": time.time() + 120}
+            return None
+
+        data = AIStatsService._parse_json(raw_text)
 
         if data:
             if len(_scorers_cache) >= MAX_CACHE_SIZE:
@@ -222,7 +232,12 @@ class AIStatsService:
 
         ck = AIStatsService._cache_key(home_team, away_team, match_date, "fullstats")
         if ck in _stats_cache:
-            return _stats_cache[ck]
+            entry = _stats_cache[ck]
+            if isinstance(entry, dict) and entry.get("_cooldown_until"):
+                if time.time() < entry["_cooldown_until"]:
+                    return None
+            else:
+                return entry
 
         prompt = (
             f"Find match statistics for {home_team} vs {away_team} "
@@ -235,6 +250,10 @@ class AIStatsService:
             '"fouls":{"home":<n>,"away":<n>}}}'
         )
         raw  = AIStatsService._gemini_call(prompt, use_search=True)
+        if not raw:
+            _stats_cache[ck] = {"_cooldown_until": time.time() + 120}
+            return None
+
         data = AIStatsService._parse_json(raw)
         if data and "statistics" in data:
             if len(_stats_cache) >= MAX_CACHE_SIZE:

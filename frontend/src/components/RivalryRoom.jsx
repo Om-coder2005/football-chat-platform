@@ -1,3 +1,5 @@
+/* eslint-disable i18next/no-literal-string */
+/* eslint-disable security/detect-object-injection */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
@@ -101,6 +103,8 @@ const RivalryRoom = () => {
   const [roomDetails, setRoomDetails] = useState(null);
   const [messages, setMessages] = useState([]);
   const [activeGoalAlert, setActiveGoalAlert] = useState(null);
+  const [warningAlert, setWarningAlert] = useState(null);
+  const [banAlert, setBanAlert] = useState(null);
 
   const triggerGoalAlert = (scorer, teamName) => {
     setActiveGoalAlert({
@@ -228,6 +232,16 @@ const RivalryRoom = () => {
         }
         return p;
       }));
+    });
+
+    newSocket.on('warning_alert', (data) => {
+      setWarningAlert(data.message);
+      setTimeout(() => setWarningAlert(null), 5000);
+    });
+
+    newSocket.on('ban_alert', (data) => {
+      setBanAlert(data.message);
+      setTimeout(() => setBanAlert(null), 10000); // Temporary ban UI block
     });
 
     setSocket(newSocket);
@@ -493,7 +507,16 @@ const RivalryRoom = () => {
                     <span className="font-bold text-black flex items-center gap-1"><User size={10} /> {msg.username}</span>
                     <span className="text-gray-400 font-poppins">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                   </div>
-                  <p className="font-medium text-xs break-words text-black pr-12">{msg.content}</p>
+                  <p className="font-medium text-xs break-words text-black pr-12">
+                    {msg.content.startsWith('[COPILOT]') ? (
+                      <span className="flex flex-col gap-1">
+                        <span className="font-bebas text-[10px] text-purple-600 tracking-wider">⚡ AI COPILOT</span>
+                        <span className="text-purple-900 bg-purple-50 p-1 border-l-2 border-purple-500">{msg.content.replace('[COPILOT] ', '')}</span>
+                      </span>
+                    ) : (
+                      msg.content
+                    )}
+                  </p>
                   
                   {/* Banter thumbs respect count */}
                   <div className="absolute right-1 bottom-1">
@@ -513,18 +536,23 @@ const RivalryRoom = () => {
           {/* Input text box - enabled if affinity is home */}
           <div className="border-t-4 border-black p-3 bg-gray-50 shrink-0">
             {myAffinity === 'home' ? (
-              <form onSubmit={handleSendMessage} className="flex gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={`Chant for ${roomDetails?.home_club_name}...`}
-                  className="neu-input flex-1 py-2 text-xs"
-                />
-                <button type="submit" className="neu-button bg-black text-white py-1 px-3 border-2 border-black text-xs shrink-0 flex items-center gap-1 shadow-[2px_2px_0_0_#000]">
-                  <Send size={12} /> Send
-                </button>
-              </form>
+              <>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[9px] font-archivo text-gray-500 uppercase">Tip: Use <span className="font-bold text-black bg-yellow-200 px-1">/banter</span> or <span className="font-bold text-black bg-yellow-200 px-1">/stat</span> for AI Copilot</span>
+                </div>
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder={`Chant for ${roomDetails?.home_club_name}...`}
+                    className="neu-input flex-1 py-2 text-xs"
+                  />
+                  <button type="submit" className="neu-button bg-black text-white py-1 px-3 border-2 border-black text-xs shrink-0 flex items-center gap-1 shadow-[2px_2px_0_0_#000]">
+                    <Send size={12} /> Send
+                  </button>
+                </form>
+              </>
             ) : (
               <div className="text-center font-archivo text-[10px] uppercase text-gray-500 py-2 border border-dashed border-gray-300">
                 <span className="inline-flex items-center justify-center gap-2"><AlertTriangle size={14} /> Standing in Away sector. Switch stand to chat.</span>
@@ -642,7 +670,16 @@ const RivalryRoom = () => {
                         </span>
                         <span className="text-gray-400 font-poppins">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                       </div>
-                      <p className="font-medium text-xs break-words text-black pr-12">{msg.content}</p>
+                      <p className="font-medium text-xs break-words text-black pr-12">
+                    {msg.content.startsWith('[COPILOT]') ? (
+                      <span className="flex flex-col gap-1">
+                        <span className="font-bebas text-[10px] text-purple-600 tracking-wider">⚡ AI COPILOT</span>
+                        <span className="text-purple-900 bg-purple-50 p-1 border-l-2 border-purple-500">{msg.content.replace('[COPILOT] ', '')}</span>
+                      </span>
+                    ) : (
+                      msg.content
+                    )}
+                  </p>
                       
                       {/* Upvote controls next to bubbles - UPVOTING OPPONENT CLOUT */}
                       <div className="absolute right-1 bottom-1">
@@ -690,7 +727,16 @@ const RivalryRoom = () => {
                     <span className="font-bold text-black flex items-center gap-1"><User size={10} /> {msg.username}</span>
                     <span className="text-gray-400 font-poppins">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                   </div>
-                  <p className="font-medium text-xs break-words text-black pr-12">{msg.content}</p>
+                  <p className="font-medium text-xs break-words text-black pr-12">
+                    {msg.content.startsWith('[COPILOT]') ? (
+                      <span className="flex flex-col gap-1">
+                        <span className="font-bebas text-[10px] text-purple-600 tracking-wider">⚡ AI COPILOT</span>
+                        <span className="text-purple-900 bg-purple-50 p-1 border-l-2 border-purple-500">{msg.content.replace('[COPILOT] ', '')}</span>
+                      </span>
+                    ) : (
+                      msg.content
+                    )}
+                  </p>
                   
                   {/* Banter thumbs respect count */}
                   <div className="absolute right-1 bottom-1">
@@ -710,18 +756,23 @@ const RivalryRoom = () => {
           {/* Input text box - enabled if affinity is away */}
           <div className="border-t-4 border-black p-3 bg-neutral-900 shrink-0">
             {myAffinity === 'away' ? (
-              <form onSubmit={handleSendMessage} className="flex gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={`Chant for ${roomDetails?.away_club_name}...`}
-                  className="neu-input flex-1 py-2 text-xs bg-white text-black"
-                />
-                <button type="submit" className="neu-button bg-red-600 text-white py-1 px-3 border-2 border-black text-xs shrink-0 flex items-center gap-1 shadow-[2px_2px_0_0_#000]">
-                  <Send size={12} /> Send
-                </button>
-              </form>
+              <>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[9px] font-archivo text-gray-500 uppercase">Tip: Use <span className="font-bold text-black bg-yellow-200 px-1">/banter</span> or <span className="font-bold text-black bg-yellow-200 px-1">/stat</span> for AI Copilot</span>
+                </div>
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder={`Chant for ${roomDetails?.away_club_name}...`}
+                    className="neu-input flex-1 py-2 text-xs bg-white text-black"
+                  />
+                  <button type="submit" className="neu-button bg-red-600 text-white py-1 px-3 border-2 border-black text-xs shrink-0 flex items-center gap-1 shadow-[2px_2px_0_0_#000]">
+                    <Send size={12} /> Send
+                  </button>
+                </form>
+              </>
             ) : (
               <div className="text-center font-archivo text-[10px] uppercase text-neutral-500 py-2 border border-dashed border-neutral-700">
                 <span className="inline-flex items-center justify-center gap-2"><AlertTriangle size={14} /> Standing in Home sector. Switch stand to chat.</span>
@@ -855,6 +906,40 @@ const RivalryRoom = () => {
                 </p>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+
+        {/* ── YELLOW CARD WARNING OVERLAY ── */}
+        {warningAlert && (
+          <motion.div
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            className="fixed top-10 left-1/2 -translate-x-1/2 z-[9999] bg-yellow-400 border-4 border-black p-4 shadow-[8px_8px_0_0_#000] flex items-center gap-4 max-w-sm"
+          >
+            <div className="w-12 h-16 bg-yellow-500 border-2 border-black rounded-sm shadow-inner shrink-0" />
+            <div>
+              <h2 className="font-bebas text-2xl uppercase leading-none">Respect Filter</h2>
+              <p className="font-archivo text-xs mt-1 font-bold">{warningAlert}</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── RED CARD BAN OVERLAY ── */}
+        {banAlert && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            className="fixed inset-0 z-[10000] bg-black/90 flex flex-col items-center justify-center pointer-events-none"
+          >
+            <motion.div 
+              animate={{ rotate: [-5, 5, -5] }} 
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="w-32 h-44 bg-red-600 border-4 border-white rounded-sm shadow-[0_0_50px_rgba(220,38,38,0.5)] mb-6"
+            />
+            <h1 className="font-bebas text-6xl text-red-500 tracking-wider">SENT OFF</h1>
+            <p className="font-archivo text-white text-lg mt-2 max-w-md text-center">{banAlert}</p>
           </motion.div>
         )}
       </AnimatePresence>

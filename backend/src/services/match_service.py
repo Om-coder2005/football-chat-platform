@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # ── Circuit-breaker state ────────────────────────────────────────────
 # When a DNS / network failure is detected we stop hammering the API
 # for CIRCUIT_BACKOFF_SECONDS and only log once per backoff window.
-CIRCUIT_BACKOFF_SECONDS = 300   # 5 minutes
+CIRCUIT_BACKOFF_SECONDS = 60   # 1 minute (reduced from 5m)
 _circuit_open_until: float = 0  # epoch timestamp; 0 = closed (healthy)
 
 # SportsDB service removed
@@ -203,7 +203,7 @@ class MatchService:
             headers = {"X-Auth-Token": api_key, "Content-Type": "application/json"}
 
             try:
-                response = requests.get(url, headers=headers, params=params, timeout=10)
+                response = requests.get(url, headers=headers, params=params, timeout=30)
 
                 if response.status_code == 429:
                     reset_time = int(response.headers.get("X-RequestCounter-Reset", 60))
