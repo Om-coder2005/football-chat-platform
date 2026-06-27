@@ -76,7 +76,7 @@ matplotlib==3.9.2
 matplotlib-inline==0.1.7
 mistune==3.0.2
 mitmproxy==12.2.0
-mitmproxy-windows==0.12.7
+mitmproxy-windows==0.12.7; platform_system == "Windows"
 mitmproxy_rs==0.12.7
 msgpack==1.1.2
 nbclient==0.10.0
@@ -101,7 +101,7 @@ pure_eval==0.2.3
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pycparser==2.22
-pydivert==2.1.0
+pydivert==2.1.0; platform_system == "Windows"
 Pygments==2.18.0
 pylsqpack==0.3.23
 pyOpenSSL==25.3.0
@@ -112,8 +112,8 @@ python-engineio==4.12.3
 python-json-logger==2.0.7
 python-socketio==5.15.0
 pytz==2024.2
-pywin32==306
-pywinpty==2.0.13
+pywin32==306; platform_system == "Windows"
+pywinpty==2.0.13; platform_system == "Windows"
 PyYAML==6.0.2
 pyzmq==26.2.0
 referencing==0.35.1
