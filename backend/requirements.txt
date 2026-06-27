@@ -75,9 +75,6 @@ MarkupSafe==2.1.5
 matplotlib==3.9.2
 matplotlib-inline==0.1.7
 mistune==3.0.2
-mitmproxy==12.2.0
-mitmproxy-windows==0.12.7; platform_system == "Windows"
-mitmproxy_rs==0.12.7
 msgpack==1.1.2
 nbclient==0.10.0
 nbconvert==7.16.4
