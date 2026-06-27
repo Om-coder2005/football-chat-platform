@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { rivalryAPI } from '../services/api';
+import { SOCKET_URL } from '../config';
 import { useToast } from '../contexts/ToastContext';
 import AppHeader from './AppHeader';
 import { Swords, ThumbsUp, Send, Trophy, Flame, ChevronRight, User, Home, Plane, AlertTriangle, Mic, CircleDot, Sparkles, Zap, Clock } from 'lucide-react';
@@ -175,7 +176,7 @@ const RivalryRoom = () => {
   useEffect(() => {
     if (!joined || !token || !id) return;
 
-    const newSocket = io('http://localhost:5001', {
+    const newSocket = io(SOCKET_URL, {
       transports: ['websocket'],
       auth: { token }
     });

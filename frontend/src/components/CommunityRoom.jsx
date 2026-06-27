@@ -1,7 +1,8 @@
-import { createElement, useEffect, useState, useRef, useMemo } from 'react';
+import { createElement, useEffect, useState, useRef, useMemo, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { messageAPI, communityAPI, matchAPI, stickerAPI } from '../services/api';
+import { SOCKET_URL } from '../config';
 import { useToast } from '../contexts/ToastContext';
 import { formatTime } from '../utils/formatters';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +12,7 @@ import TacticBoard from './TacticBoard';
 import GoalAnimation from './GoalAnimation';
 import { MessageSquare, Users, Activity, Sparkles, Send, Paperclip, X, Trash2, Star, Shield, Info, RefreshCw, Trophy, Pin, PinOff, VolumeX, AlertTriangle, UserMinus, Ban, Settings, Smile, ClipboardList, CircleDot, Megaphone, Flame, Crown, Hand, Footprints, Zap, BadgeAlert } from 'lucide-react';
 import '../styles/CommunityRoom.css';
+import { ThemeContext } from '../contexts/ThemeContext';
 
 const QUICK_REACTIONS = [
   { label: 'Goal', text: 'Goal! ', icon: CircleDot },
@@ -24,6 +26,7 @@ const QUICK_REACTIONS = [
 ];
 
 const CommunityRoom = () => {
+  const { bubbleStyle, chatFont } = useContext(ThemeContext);
   const { communityId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -220,7 +223,7 @@ const CommunityRoom = () => {
   useEffect(() => {
     if (!token) return;
 
-    const newSocket = io('http://localhost:5001', {
+    const newSocket = io(SOCKET_URL, {
       transports: ['websocket'],
       auth: { token }
     });
@@ -590,7 +593,7 @@ const CommunityRoom = () => {
                   key={msg.id || idx}
                   className={`msg-row ${msg.user_id === currentUser.id ? 'msg-own' : 'msg-other'} ${msg.is_highlighted ? 'msg-highlighted' : ''}`}
                 >
-                  <div className="msg-bubble">
+                  <div className={`msg-bubble bubble-${bubbleStyle}`}>
                     {msg.is_highlighted && (
                       <div className="highlight-badge text-[var(--accent-primary)] font-archivo text-[10px] flex items-center gap-1 mb-1">
                         <Star size={10} fill="currentColor" /> HIGHLIGHTED
@@ -651,7 +654,7 @@ const CommunityRoom = () => {
                       </div>
                     ) : (
                       <>
-                        <div className="msg-text">
+                        <div className="msg-text" style={{ fontFamily: chatFont === 'bebas' ? 'var(--font-bebas)' : chatFont === 'mono' ? 'monospace' : 'var(--font-inter)' }}>
                           {msg.content}
                         </div>
                         {msg.media_url && (

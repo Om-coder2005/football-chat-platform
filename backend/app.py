@@ -2,6 +2,7 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -35,7 +36,18 @@ def _get_cors_origins():
     origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174")
     if origins.strip() == "*":
         return ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"]
-    return [origin.strip() for origin in origins.split(",") if origin.strip()]
+
+    normalized_origins = []
+    for origin in origins.split(","):
+        origin = origin.strip().rstrip("/")
+        if not origin:
+            continue
+        parsed = urlparse(origin)
+        if parsed.scheme and parsed.netloc:
+            normalized_origins.append(f"{parsed.scheme}://{parsed.netloc}")
+        else:
+            normalized_origins.append(origin)
+    return normalized_origins
 
 
 CORS_ORIGINS = _get_cors_origins()
