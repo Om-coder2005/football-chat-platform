@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from flask_jwt_extended import JWTManager, decode_token
 from flask_cors import CORS
@@ -131,6 +131,10 @@ def index():
 @app.route("/test")
 def test_socket():
     return render_template("test_socketio.html")
+
+@app.route("/health")
+def health_check():
+    return jsonify({"status": "ok"}), 200
 
 # ========== SECURE SOCKET.IO EVENTS ==========
 
